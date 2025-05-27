@@ -1,0 +1,74 @@
+/* DoctorLayout.css */
+.doctor-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
+.app-bar-doctor {
+    width: 100%;
+    /*background-color: #3f51b5;*/
+    color: white;
+    position: fixed;
+    top: 0;
+    z-index: 1300;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /*padding: 15px 20px;*/
+}
+
+.toolbar-doctor {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    background-color: white !important;
+}
+
+
+.app-bar-title {
+    font-size: 24px;
+    width: 250px;
+    background-color: #004B91;
+    padding: 17px 0;
+}
+
+.logout-btn {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.logout-btn:hover {
+    background-color: #d32f2f;
+}
+
+.main-content-doctor {
+    display: flex;
+    flex-grow: 1;
+    margin-top: 64px; /* Adjust based on the height of the app-bar */
+    width: 100%;
+    height: 100vh;
+}
+
+
+.content-doctor {
+    flex-grow: 1;
+    padding: 20px;
+    background-color: #f5f5f5;
+    margin-left: 130px; /* This should be the width of the sidebar */
+    overflow-y: auto;
+}
+
+.content-doctor-layout{
+    height: 85vh;
+    flex-grow: 1;
+    /*padding: 20px;*/
+    background-color: #f5f5f5;
+    overflow-y: auto;
+}

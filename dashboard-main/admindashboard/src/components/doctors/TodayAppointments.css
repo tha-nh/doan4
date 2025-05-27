@@ -1,0 +1,320 @@
+.today-appointments {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+.sidebar {
+    width: 250px;
+    flex-shrink: 0;
+}
+
+.content {
+    flex-grow: 1;
+    padding: 20px;
+}
+
+.appointments-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.appointments-list li {
+    padding: 20px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 90%;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+.appointments-list li div {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: flex-start;
+    width: 50%;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.appointments-list li div:last-child {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    width: 50%;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.appointments-list li p {
+    margin: 0;
+    font-size: 15px;
+}
+
+.appointments-list li select {
+    font-size: 15px;
+    padding: 5px;
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    outline: none;
+}
+
+.appointments-list li div button {
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    outline: none;
+    background-color: #004B91;
+    color: white;
+    font-size: 12px;
+    transition: all 0.3s ease-in-out;
+}
+
+.appointments-list li button:hover {
+    color: #004B91;
+    background-color: white;
+    box-shadow: 0 0 3px #004B91;
+    transition: all 0.3s ease-in-out;
+    cursor: pointer;
+}
+
+.dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 500px;
+    z-index: 1000;
+}
+
+.dialog-records {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 500px;
+    height: 500px;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.dialog-records .dialog-content{
+    height: 400px;
+    overflow-y: scroll;
+}
+
+.dialog-title {
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: #004B91;
+    font-weight: bold;
+}
+
+.dialog-content {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.dialog-content input {
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    outline: none;
+    padding: 10px;
+}
+
+.dialog-content select{
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    outline: none;
+    padding: 10px;
+}
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.dialog-actions .btn {
+    margin-left: 10px;
+}
+
+
+.tab-title {
+    color: #004B91;
+    font-size: 25px;
+    font-weight: bold;
+}
+
+textarea{
+    height: 50px;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    outline: none;
+}
+
+button:disabled {
+    background-color: #cccccc !important;
+    color: #666666 !important;
+    cursor: not-allowed !important;
+}
+
+button:disabled:hover{
+    background-color: #cccccc !important;
+}
+
+.date-buttons, .time-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease-in-out;
+}
+
+.date-buttons button, .time-slots button {
+    flex: 1 1 30%;
+    padding: 10px;
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #000;
+    outline: none;
+    transition: all 0.3s ease-in-out;
+}
+
+.date-buttons button:hover, .time-slots button:hover {
+    background-color: #004b91;
+    box-shadow: none;
+    border: none;
+    color: white;
+    transition: all 0.3s ease-in-out;
+}
+
+.date-buttons button.selected, .time-slots button.selected {
+    background-color: #004b91;
+    border: none;
+    color: #ffffff;
+    transition: all 0.3s ease-in-out;
+}
+
+.date-select span {
+    font-size: 15px;
+    display: block;
+    color: #004b91;
+    text-align: center;
+    font-weight: bold;
+    padding-bottom: 10px;
+}
+
+.date-buttons, .time-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease-in-out;
+}
+
+.date-buttons button, .time-slots button {
+    flex: 1 1 30%;
+    padding: 10px;
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #000;
+    outline: none;
+    transition: all 0.3s ease-in-out;
+}
+
+.date-buttons button:hover, .time-slots button:hover {
+    background-color: #004b91;
+    box-shadow: none;
+    border: none;
+    color: white;
+    transition: all 0.3s ease-in-out;
+}
+
+.date-buttons button.selected, .time-slots button.selected {
+    background-color: #004b91;
+    border: none;
+    color: #ffffff;
+    transition: all 0.3s ease-in-out;
+}
+
+.time-error{
+    position: absolute;
+    background-color: rgba(0,0,0,0.7);
+    color: white;
+    border-radius: 4px;
+    padding: 10px;
+    z-index: 1;
+    font-size: 14px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 65%;
+    transition: all 0.3s ease-in-out;
+    text-align: center;
+}
+
+.time-slots{
+    position: relative;
+}
+
+.dialog label{
+    color: #004b91;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.medical-record-details{
+    display: flex;
+    flex-direction: column;
+}
+
+.medical-record-details p{
+    margin: 0;
+}
+
+.medical-record-details button{
+    border: none;
+    outline: none;
+    background-color: #004b91;
+    color: white;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.medical-record-details button:hover{
+cursor: pointer;
+    background-color: white;
+    color: #004b91;
+    box-shadow: 0 0 3px #004b91;
+
+}
+
+.success-message {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+

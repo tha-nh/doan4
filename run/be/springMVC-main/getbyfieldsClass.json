@@ -1,0 +1,21 @@
+[
+  {
+    "department_id": 1,
+    "department_name": "cardiology",
+    "location": "1st floor",
+    "department_img": "../img/pexels-pixabay-40568.jpg",
+    "department_description": "ok",
+    "doctorsList": [
+      {
+        "doctor_id": 1,
+        "doctor_name": "Le Cong Hong Phuc",
+        "doctor_phone": 377792678,
+        "doctor_address": "Thanh Hoa",
+        "doctor_email": "hongphuc0835@gmail.com",
+        "department_id": 1,
+        "doctor_username": "hongphuc",
+        "doctor_password": "phuc123"
+      }
+    ]
+  }
+]

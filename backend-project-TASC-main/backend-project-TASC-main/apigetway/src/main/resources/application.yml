@@ -1,0 +1,50 @@
+#spring:
+#  application:
+#    name: apigetway
+#  cloud:
+#    gateway:
+#      routes:
+#        - id: UserServiceWithJwt
+#          uri: lb://USERSERVICE
+#          predicates:
+#            - Path=/api/userservice/jwt/**
+#          filters:
+#            - AuthenFilter
+#        - id: UserServicePublic
+#          uri: lb://USERSERVICE
+#          predicates:
+#            - Path=/api/userservice/notjwt/**
+#          filters:
+#            - AuthenFilter
+#        - id: AppoinmentService
+#          uri: lb://APPOINMENTSERVICE
+#          predicates:
+#            - Path=/api/appointments/**
+#          filters:
+#            - AuthenFilter
+#        - id: PaymentServicePublic
+#          uri: lb://PAYMENTSERVICE
+#          predicates:
+#            - Path=/api/paymentservice/create
+#          filters:
+#            - AuthenFilter
+#        - id: PaymentService
+#          uri: lb://PAYMENTSERVICE
+#          predicates:
+#            - Path=/api/paymentservice/**
+#          filters:
+#            - AuthenFilter
+#
+#  eureka:
+#    client:
+#      service-url:
+#        defaultZone: http://localhost:8761/eureka/
+#      register-with-eureka: true
+#      fetch-registry: true
+#
+#jwt:
+#  secret: Q3bW@kC7tJp8&!4RzV9uH0dF%y5zP6v2X1
+#
+#server:
+#  port: 8080
+#

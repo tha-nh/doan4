@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/backend-project-TASC-main/Appoinmentservice/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/backend-project-TASC-main/DiscoveryServer/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/backend-project-TASC-main/Notification/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/backend-project-TASC-main/PaymentService/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/backend-project-TASC-main/Transactionn/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/backend-project-TASC-main/UserService/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/backend-project-TASC-main/apigetway/src/main/java" charset="UTF-8" />
+  </component>
+</project>

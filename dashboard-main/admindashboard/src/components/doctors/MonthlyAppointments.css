@@ -1,0 +1,29 @@
+.monthly-appointments {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+
+.search-bar {
+    padding: 10px;
+    margin: 20px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    outline: none;
+}
+
+/*.appointments-list {*/
+/*    list-style: none;*/
+/*    padding: 0;*/
+/*}*/
+
+/*.appointments-list li {*/
+/*    padding: 10px;*/
+/*    border-bottom: 1px solid #ccc;*/
+/*    margin-bottom: 10px;*/
+/*}*/
+
+/*.appointments-list li:last-child {*/
+/*    border-bottom: none;*/
+/*}*/

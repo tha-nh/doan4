@@ -1,0 +1,2 @@
+C:/Boss/GitHub/sem4/doan4/esavior-driver-main/android/app/.cxx/Debug/1z6t2f4d/x86/CMakeFiles/edit_cache.dir
+C:/Boss/GitHub/sem4/doan4/esavior-driver-main/android/app/.cxx/Debug/1z6t2f4d/x86/CMakeFiles/rebuild_cache.dir

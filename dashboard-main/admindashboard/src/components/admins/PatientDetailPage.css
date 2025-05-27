@@ -1,0 +1,64 @@
+.patient-detail-page .patient-content{
+    width: 100%;
+    flex: 1 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 50px);
+}
+
+.patient-detail-page{
+    display: flex;
+    height: 100%;
+    width: 100%;
+}
+
+.search-results-page{
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+.result-container{
+    padding: 20px;
+    width: 100%;
+    height: 100%;
+    overflow-y: scroll;
+}
+
+.result-container ul{
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 20px;
+}
+
+.result-container ul li{
+    list-style-type: none;
+    width: 100%;
+}
+
+.result-div{
+    width: 80%;
+    display: flex;
+    flex-direction: row;
+    box-shadow: 0 0 3px rgba(0,0,0,0.3);
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.result-div:hover{
+    cursor: pointer;
+    background-color: rgba(0,0,0,0.1);;
+}
+
+.result-div div{
+    width: 50%;
+}
+
+.result-container h3{
+    margin: 5px 0;
+    font-size: 18px;
+    color: #004b91;
+}

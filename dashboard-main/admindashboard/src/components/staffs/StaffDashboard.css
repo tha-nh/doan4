@@ -1,0 +1,172 @@
+
+.staff-dashboard {
+    font-family: Arial, sans-serif;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    /*padding: 20px;*/
+    /*background-color: #f5f5f5;*/
+}
+
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    /*padding: 10px;*/
+    /*background-color: #3f51b5;*/
+    color: white;
+    /*border-radius: 8px;*/
+    /*box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);*/
+}
+
+header h1 {
+    font-size: 24px;
+    margin: 0;
+    text-align: center;
+}
+
+header button {
+    background-color: #004B91;
+    color: #ffffff;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 10px;
+    gap: 5px;
+    border-radius: 4px;
+    margin-right: 30px;
+}
+
+header button:hover{
+    opacity: 0.8;
+}
+
+
+main {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 30px;
+}
+
+main .filter-section {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-left: 29px;
+}
+
+main .filter-section label {
+    font-size: 25px;
+    margin-right: 10px;
+    color: #004B91;
+}
+
+main .filter-section select {
+    font-size: 16px;
+    padding: 8px;
+    margin-right: 10px;
+}
+
+main .filter-section button {
+    font-size: 16px;
+    background-color: #f5f5f5;
+    /*color: white;*/
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+
+main .error-message {
+    color: #f44336;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+main .appointment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+main .appointment-list .appointment-card {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+main .appointment-list .appointment-card h2 {
+    font-size: 20px;
+    margin: 0 0 10px;
+}
+
+main .appointment-list .appointment-card p {
+    font-size: 16px;
+    margin: 5px 0;
+}
+
+main .appointment-list .appointment-card .action-button {
+    font-size: 16px;
+    padding: 8px 16px;
+    margin-right: 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    border: none;
+    color: white;
+}
+
+main .appointment-list .appointment-card .confirm-button {
+    background-color: #2196f3;
+}
+
+main .appointment-list .appointment-card .complete-button {
+    background-color: #4caf50;
+}
+
+main .appointment-list .appointment-card .cancel-button {
+    background-color: #f44336;
+}
+
+main .appointment-list .appointment-card .edit-button {
+    background-color: #004B91;
+}
+
+main .appointment-list .appointment-card .action-button:hover {
+    opacity: 0.8;
+}
+
+
+.appointment-card strong{
+    color: #004B91;
+}
+
+.staff-layout .search{
+    padding: 0 30px;
+}
+
+.today-stats-button{
+    margin-left: 20%;
+}
+
+.action-button.edit-button{
+    border: none;
+    background-color: #004b91;
+    color: white;
+    outline: none;
+    font-size: 12px;
+    transition: all 0.3s ease-in-out;
+    border-radius: 4px;
+    font-weight: 100;
+    padding: 10px;
+}
+
