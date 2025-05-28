@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:google_fonts/google_fonts.dart';
 import 'medical_record_detail_screen.dart'; // Import the detail screen
 
 class MedicalRecordsScreen extends StatefulWidget {
@@ -18,6 +19,13 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
   int? doctorId;
   bool _isLoading = true;
   String? _errorMessage;
+
+  // Color palette matching MedicalRecordDetailScreen
+  static const Color primaryColor = Color(0xFF0288D1);
+  static const Color accentColor = Color(0xFFFFB300);
+  static const Color backgroundColor = Color(0xFFF5F7FA);
+  static const Color cardColor = Colors.white;
+  static const Color errorColor = Color(0xFFE57373);
 
   @override
   void initState() {
@@ -68,11 +76,16 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
+      backgroundColor: Colors.white, // Nền trắng
 
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: Colors.blueAccent))
+            ? Center(
+          child: CircularProgressIndicator(
+            color: accentColor,
+            strokeWidth: 3,
+          ),
+        )
             : _errorMessage != null
             ? Center(
           child: Column(
@@ -80,93 +93,159 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
             children: [
               Text(
                 _errorMessage!,
-                style: const TextStyle(color: Colors.red, fontSize: 16),
+                style: GoogleFonts.lora(
+                  color: errorColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loadDoctorIdAndFetchRecords,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
+                  backgroundColor: accentColor,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                 ),
-                child: const Text(
+                child: Text(
                   'Thử lại',
-                  style: TextStyle(color: Colors.white),
+                  style: GoogleFonts.lora(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],
           ),
         )
             : records.isEmpty
-            ? const Center(
+            ? Center(
           child: Text(
             'Không có hồ sơ bệnh án nào',
-            style: TextStyle(fontSize: 18, color: Colors.grey),
+            style: GoogleFonts.lora(
+              fontSize: 18,
+              color: Colors.black54,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         )
             : RefreshIndicator(
           onRefresh: fetchRecords,
-          color: Colors.blueAccent,
+          color: accentColor,
           child: ListView.builder(
             padding: const EdgeInsets.all(16.0),
             itemCount: records.length,
             itemBuilder: (context, index) {
               final r = records[index];
-              return Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              return _buildRecordCard(r);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildRecordCard(dynamic record) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MedicalRecordDetailScreen(record: record),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  backgroundColor: primaryColor.withOpacity(0.1),
+                  radius: 24,
+                  child: const Icon(
+                    Icons.medical_information,
+                    color: primaryColor,
+                    size: 28,
+                  ),
                 ),
-                margin: const EdgeInsets.symmetric(vertical: 8.0),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(16.0),
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.blueAccent.withOpacity(0.1),
-                    child: const Icon(
-                      Icons.medical_information,
-                      color: Colors.blueAccent,
-                      size: 30,
-                    ),
-                  ),
-                  title: Text(
-                    'Bệnh nhân: ${r['patient_id'] ?? 'Không xác định'}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
-                  ),
-                  subtitle: Column(
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 8),
                       Text(
-                        'Triệu chứng: ${r['symptoms'] ?? 'Chưa có'}',
-                        style: const TextStyle(fontSize: 14),
+                        'Bệnh nhân: ${record['patient_id'] ?? 'Không xác định'}',
+                        style: GoogleFonts.lora(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 17,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Triệu chứng: ${record['symptoms'] ?? 'Chưa có'}',
+                        style: GoogleFonts.lora(
+                          fontSize: 15,
+                          color: Colors.black87,
+                          height: 1.5,
+                        ),
                       ),
                       Text(
-                        'Chẩn đoán: ${r['diagnosis'] ?? 'Chưa có'}',
-                        style: const TextStyle(fontSize: 14),
+                        'Chẩn đoán: ${record['diagnosis'] ?? 'Chưa có'}',
+                        style: GoogleFonts.lora(
+                          fontSize: 15,
+                          color: Colors.black87,
+                          height: 1.5,
+                        ),
                       ),
                       Text(
-                        'Mức độ: ${r['severity'] ?? 'Chưa có'}',
-                        style: const TextStyle(fontSize: 14),
+                        'Mức độ: ${record['severity'] ?? 'Chưa có'}',
+                        style: GoogleFonts.lora(
+                          fontSize: 15,
+                          color: Colors.black87,
+                          height: 1.5,
+                          fontWeight: FontWeight.w600, // Emphasize severity
+                        ),
                       ),
                     ],
                   ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => MedicalRecordDetailScreen(record: r),
-                      ),
-                    );
-                  },
                 ),
-              );
-            },
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: primaryColor.withOpacity(0.5),
+                  size: 16,
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -96,7 +96,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     }).toList();
 
     return Scaffold(
-
+        backgroundColor: Colors.white,
 
       body: SafeArea(
         child: Column(
