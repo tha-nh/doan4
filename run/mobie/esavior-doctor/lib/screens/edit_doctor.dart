@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class EditDoctorScreen extends StatefulWidget {
   const EditDoctorScreen({super.key, required this.doctorId});
@@ -70,7 +71,6 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
           _priceController.text = doctor['doctor_price']?.toString() ?? '';
           _statusController.text = doctor['working_status'] ?? '';
           _imageController.text = doctor['doctor_image'] ?? '';
-
           _errorMessage = null;
         });
       } else {
@@ -104,7 +104,6 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
       "doctor_price": double.tryParse(_priceController.text.trim()),
       "working_status": _statusController.text.trim(),
       "doctor_image": _imageController.text.trim(),
-
     };
 
     final url = Uri.parse('http://10.0.2.2:8081/api/v1/doctors/update');
@@ -117,9 +116,17 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cập nhật thành công'),
+          SnackBar(
+            content: Text(
+              'Cập nhật thành công',
+              style: GoogleFonts.lora(
+                fontSize: 14,
+                color: Colors.white,
+              ),
+            ),
             backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
         Navigator.pop(context, true);
@@ -150,7 +157,6 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
     _priceController.dispose();
     _statusController.dispose();
     _imageController.dispose();
-
     super.dispose();
   }
 
@@ -159,7 +165,14 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('Chỉnh sửa thông tin bác sĩ'),
+        title: Text(
+          'Chỉnh sửa thông tin bác sĩ',
+          style: GoogleFonts.lora(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
         backgroundColor: Colors.blueAccent,
         foregroundColor: Colors.white,
       ),
@@ -173,7 +186,10 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
             children: [
               Text(
                 _errorMessage!,
-                style: const TextStyle(color: Colors.red, fontSize: 16),
+                style: GoogleFonts.lora(
+                  fontSize: 16,
+                  color: Colors.red,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
@@ -185,9 +201,13 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   'Thử lại',
-                  style: TextStyle(color: Colors.white),
+                  style: GoogleFonts.lora(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],
@@ -201,7 +221,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header
-                const Center(
+                Center(
                   child: Icon(
                     Icons.medical_services,
                     size: 60,
@@ -209,10 +229,10 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Center(
+                Center(
                   child: Text(
                     'Cập nhật hồ sơ bác sĩ',
-                    style: TextStyle(
+                    style: GoogleFonts.lora(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.blueAccent,
@@ -234,6 +254,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                           controller: _nameController,
                           decoration: InputDecoration(
                             labelText: 'Họ tên',
+                            labelStyle: GoogleFonts.lora(),
                             prefixIcon: const Icon(Icons.person, color: Colors.blueAccent),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -241,6 +262,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                             filled: true,
                             fillColor: Colors.white,
                           ),
+                          style: GoogleFonts.lora(),
                           validator: (value) =>
                           value!.trim().isEmpty ? 'Vui lòng nhập họ tên' : null,
                         ),
@@ -249,6 +271,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                           controller: _phoneController,
                           decoration: InputDecoration(
                             labelText: 'Số điện thoại',
+                            labelStyle: GoogleFonts.lora(),
                             prefixIcon: const Icon(Icons.phone, color: Colors.blueAccent),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -256,6 +279,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                             filled: true,
                             fillColor: Colors.white,
                           ),
+                          style: GoogleFonts.lora(),
                           keyboardType: TextInputType.phone,
                           validator: (value) {
                             if (value!.trim().isEmpty) return 'Vui lòng nhập số điện thoại';
@@ -268,6 +292,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                           controller: _addressController,
                           decoration: InputDecoration(
                             labelText: 'Địa chỉ',
+                            labelStyle: GoogleFonts.lora(),
                             prefixIcon: const Icon(Icons.location_on, color: Colors.blueAccent),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -275,6 +300,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                             filled: true,
                             fillColor: Colors.white,
                           ),
+                          style: GoogleFonts.lora(),
                           validator: (value) =>
                           value!.trim().isEmpty ? 'Vui lòng nhập địa chỉ' : null,
                         ),
@@ -283,6 +309,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                           controller: _emailController,
                           decoration: InputDecoration(
                             labelText: 'Email',
+                            labelStyle: GoogleFonts.lora(),
                             prefixIcon: const Icon(Icons.email, color: Colors.blueAccent),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -290,6 +317,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                             filled: true,
                             fillColor: Colors.white,
                           ),
+                          style: GoogleFonts.lora(),
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
                             if (value!.trim().isEmpty) return 'Vui lòng nhập email';
@@ -305,11 +333,13 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                           controller: _priceController,
                           decoration: InputDecoration(
                             labelText: 'Giá khám (VND)',
+                            labelStyle: GoogleFonts.lora(),
                             prefixIcon: const Icon(Icons.monetization_on, color: Colors.blueAccent),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             filled: true,
                             fillColor: Colors.white,
                           ),
+                          style: GoogleFonts.lora(),
                           keyboardType: TextInputType.number,
                           validator: (value) {
                             if (value!.trim().isEmpty) return 'Vui lòng nhập giá khám';
@@ -322,29 +352,33 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                           controller: _statusController,
                           decoration: InputDecoration(
                             labelText: 'Trạng thái làm việc',
+                            labelStyle: GoogleFonts.lora(),
                             prefixIcon: const Icon(Icons.work, color: Colors.blueAccent),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             filled: true,
                             fillColor: Colors.white,
                           ),
+                          style: GoogleFonts.lora(),
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _imageController,
                           decoration: InputDecoration(
                             labelText: 'URL ảnh đại diện',
+                            labelStyle: GoogleFonts.lora(),
                             prefixIcon: const Icon(Icons.image, color: Colors.blueAccent),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             filled: true,
                             fillColor: Colors.white,
                           ),
+                          style: GoogleFonts.lora(),
                         ),
-
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _summaryController,
                           decoration: InputDecoration(
                             labelText: 'Tóm tắt',
+                            labelStyle: GoogleFonts.lora(),
                             prefixIcon: const Icon(Icons.description, color: Colors.blueAccent),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -352,6 +386,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                             filled: true,
                             fillColor: Colors.white,
                           ),
+                          style: GoogleFonts.lora(),
                           maxLines: 2,
                         ),
                         const SizedBox(height: 16),
@@ -359,6 +394,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                           controller: _descriptionController,
                           decoration: InputDecoration(
                             labelText: 'Mô tả chi tiết',
+                            labelStyle: GoogleFonts.lora(),
                             prefixIcon: const Icon(Icons.info, color: Colors.blueAccent),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -366,6 +402,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                             filled: true,
                             fillColor: Colors.white,
                           ),
+                          style: GoogleFonts.lora(),
                           maxLines: 4,
                         ),
                       ],
@@ -390,9 +427,9 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                       color: Colors.white,
                       strokeWidth: 2,
                     )
-                        : const Text(
+                        : Text(
                       'Lưu thay đổi',
-                      style: TextStyle(
+                      style: GoogleFonts.lora(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,

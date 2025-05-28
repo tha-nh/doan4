@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -87,18 +88,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: Colors.blueAccent,
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Doctor Portal',
-                  style: TextStyle(
+                  style: GoogleFonts.lora(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Colors.blueAccent,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Đăng nhập để quản lý lịch khám',
-                  style: TextStyle(
+                  style: GoogleFonts.lora(
                     fontSize: 16,
                     color: Colors.grey,
                   ),
@@ -115,9 +116,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: Text(
                       _errorMessage!,
-                      style: const TextStyle(
+                      style: GoogleFonts.lora(
                         color: Colors.red,
                         fontWeight: FontWeight.w500,
+                        fontSize: 14,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -133,6 +135,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     filled: true,
                     fillColor: Colors.white,
+                    labelStyle: GoogleFonts.lora(
+                      color: Colors.grey,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -147,6 +153,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     filled: true,
                     fillColor: Colors.white,
+                    labelStyle: GoogleFonts.lora(
+                      color: Colors.grey,
+                      fontSize: 16,
+                    ),
                   ),
                   obscureText: true,
                 ),
@@ -168,9 +178,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: Colors.white,
                       strokeWidth: 2,
                     )
-                        : const Text(
+                        : Text(
                       'Đăng nhập',
-                      style: TextStyle(
+                      style: GoogleFonts.lora(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -178,7 +188,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-
               ],
             ),
           ),

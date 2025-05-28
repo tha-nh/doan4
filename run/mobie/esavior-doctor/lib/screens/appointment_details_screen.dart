@@ -1,10 +1,135 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // For date formatting
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class AppointmentDetailsScreen extends StatelessWidget {
+class AppointmentDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> appointment;
 
   const AppointmentDetailsScreen({super.key, required this.appointment});
+
+  @override
+  State<AppointmentDetailsScreen> createState() => _AppointmentDetailsScreenState();
+}
+
+class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> with SingleTickerProviderStateMixin {
+  Map<String, dynamic>? _appointmentDetails;
+  bool _isLoading = true;
+  bool _isUpdating = false;
+  String? _errorMessage;
+  late AnimationController _animationController;
+  late Animation<Offset> _slideAnimation;
+
+  // Color palette
+  static const Color primaryColor = Color(0xFF0288D1);
+  static const Color accentColor = Color(0xFFFFB300);
+  static const Color backgroundColor = Color(0xFFF5F7FA);
+  static const Color cardColor = Colors.white;
+  static const Color errorColor = Color(0xFFE57373);
+  static const Color textColor = Color(0xFF1A1A1A);
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.2),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutQuad,
+    ));
+    _animationController.forward();
+    _fetchAppointmentDetails();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchAppointmentDetails() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    final appointmentId = widget.appointment['appointment_id'].toString();
+    final url = Uri.parse('http://10.0.2.2:8081/api/v1/appointments/$appointmentId');
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        setState(() {
+          _appointmentDetails = jsonDecode(response.body);
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'Lỗi khi tải chi tiết lịch hẹn: ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi kết nối. Vui lòng thử lại!';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _updateStatus(String newStatus) async {
+    setState(() {
+      _isUpdating = true;
+      _errorMessage = null;
+    });
+    final appointmentId = (_appointmentDetails?['appointment_id'] ?? widget.appointment['appointment_id']).toString();
+    final url = Uri.parse('http://10.0.2.2:8081/api/v1/appointments/updateStatus');
+    try {
+      final response = await http.put(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'appointment_id': appointmentId,
+          'status': newStatus,
+        }),
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          _appointmentDetails?['status'] = newStatus;
+          _isUpdating = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Cập nhật trạng thái thành công: $newStatus',
+              style: GoogleFonts.lora(
+                fontSize: 14,
+                color: Colors.white,
+              ),
+            ),
+            backgroundColor: primaryColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+        await _fetchAppointmentDetails();
+      } else {
+        setState(() {
+          _errorMessage = 'Lỗi khi cập nhật trạng thái: ${response.statusCode}';
+          _isUpdating = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi kết nối khi cập nhật trạng thái. Vui lòng thử lại!';
+        _isUpdating = false;
+      });
+    }
+  }
 
   String _formatDate(String? date) {
     if (date == null) return 'Chưa có';
@@ -18,56 +143,116 @@ class AppointmentDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appointment = _appointmentDetails ?? widget.appointment;
     final patientName = appointment['patient'] != null && appointment['patient'].isNotEmpty
-        ? appointment['patient'][0]['patient_name'] ?? 'Bệnh nhân ID: ${appointment['patient_id']}'
-        : 'Bệnh nhân ID: ${appointment['patient_id'] ?? 'Không xác định'}';
-    final staffName = appointment['staff'] != null && appointment['staff'].isNotEmpty
-        ? appointment['staff'][0]['staff_name'] ?? 'Không xác định'
-        : 'Không xác định';
+        ? appointment['patient'][0]['patient_name']?.toString() ?? 'Bệnh nhân ID: ${appointment['patient_id']?.toString() ?? 'Không xác định'}'
+        : 'Bệnh nhân ID: ${appointment['patient_id']?.toString() ?? 'Không xác định'}';
     final doctorName = appointment['doctor'] != null && appointment['doctor'].isNotEmpty
-        ? appointment['doctor'][0]['doctor_name'] ?? 'Không xác định'
+        ? appointment['doctor'][0]['doctor_name']?.toString() ?? 'Không xác định'
         : 'Không xác định';
+    final status = appointment['status']?.toString() ?? 'Chưa xác định';
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'Chi Tiết Lịch Hẹn',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        title: Text(
+          'Hồ Sơ Lịch Hẹn',
+          style: GoogleFonts.lora(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
         ),
-        backgroundColor: Colors.blueAccent,
-        elevation: 0,
+        backgroundColor: primaryColor,
+        elevation: 2,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Thông Tin Hẹn Khám',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueAccent),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildDetailRow('Mã lịch hẹn', appointment['appointment_id']?.toString() ?? 'Không xác định'),
-                  _buildDetailRow('Bệnh nhân', patientName),
-                  _buildDetailRow('Bác sĩ', doctorName),
-                  _buildDetailRow('Nhân viên', staffName),
-                  _buildDetailRow('Ngày đặt', _formatDate(appointment['appointment_date'])),
-                  _buildDetailRow('Ngày khám', _formatDate(appointment['medical_day'])),
-                  _buildDetailRow('Khung giờ', appointment['slot']?.toString() ?? 'Chưa có'),
-                  _buildDetailRow('Trạng thái', appointment['status'] ?? 'Chưa xác định'),
-                  _buildDetailRow('Thanh toán', appointment['payment_name'] ?? 'Chưa có'),
-                  _buildDetailRow('Giá', '${appointment['price']?.toString() ?? '0'} VND'),
-                ],
+        child: _isLoading
+            ? Center(
+          child: CircularProgressIndicator(
+            color: accentColor,
+            strokeWidth: 4,
+          ),
+        )
+            : _errorMessage != null
+            ? Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: errorColor,
+                size: 60,
               ),
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                style: GoogleFonts.lora(
+                  color: errorColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: _fetchAppointmentDetails,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 3,
+                ),
+                icon: const Icon(Icons.refresh, size: 20),
+                label: Text(
+                  'Thử lại',
+                  style: GoogleFonts.lora(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        )
+            : SlideTransition(
+          position: _slideAnimation,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildPatientHeader(patientName, appointment['patient_id']?.toString()),
+                const SizedBox(height: 20),
+                _buildSectionHeader('Thông Tin Bác Sĩ'),
+                const SizedBox(height: 12),
+                _buildDoctorHeader(doctorName),
+                const SizedBox(height: 20),
+                _buildSectionHeader('Chi Tiết Lịch Hẹn'),
+                const SizedBox(height: 12),
+                _buildDetailCard([
+                  _buildDetailRow('Mã lịch hẹn', appointment['appointment_id']?.toString() ?? 'Không xác định'),
+                  _buildDetailRow('Ngày đặt', _formatDate(appointment['appointment_date']?.toString())),
+                  _buildDetailRow('Ngày khám', _formatDate(appointment['medical_day']?.toString())),
+                  _buildDetailRow('Khung giờ', appointment['slot']?.toString() ?? 'Chưa có'),
+                  _buildDetailRow('Trạng thái', status),
+                  _buildDetailRow('Thanh toán', appointment['payment_name']?.toString() ?? 'Chưa có'),
+                  _buildDetailRow('Giá', '${appointment['price']?.toString() ?? '0'} VND'),
+                ]),
+                if (status == 'PENDING') ...[
+                  const SizedBox(height: 20),
+                  _buildSectionHeader('Hành Động'),
+                  const SizedBox(height: 12),
+                  _buildActionButtons(),
+                ],
+              ],
             ),
           ),
         ),
@@ -75,28 +260,240 @@ class AppointmentDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+  Widget _buildPatientHeader(String patientName, String? patientId) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              '$label:',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: primaryColor.withOpacity(0.2),
+            child: const Icon(
+              Icons.person,
+              size: 40,
+              color: primaryColor,
             ),
           ),
+          const SizedBox(width: 12),
           Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 16, color: Colors.black54),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  patientName,
+                  style: GoogleFonts.lora(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'ID: ${patientId ?? 'Không xác định'}',
+                  style: GoogleFonts.lora(
+                    fontSize: 16,
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDoctorHeader(String doctorName) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: accentColor.withOpacity(0.2),
+            child: const Icon(
+              Icons.medical_services,
+              size: 40,
+              color: accentColor,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              doctorName,
+              style: GoogleFonts.lora(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      decoration: BoxDecoration(
+        color: primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        title,
+        style: GoogleFonts.lora(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: primaryColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailCard(List<Widget> children) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: children,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.lora(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: GoogleFonts.lora(
+              fontSize: 14,
+              color: textColor,
+              height: 1.4,
+            ),
+          ),
+          const Divider(height: 20, thickness: 1, color: Colors.grey),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _isUpdating ? null : () => _updateStatus('CANCELLED'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: errorColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 3,
+            ),
+            icon: _isUpdating
+                ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+            )
+                : const Icon(Icons.cancel, size: 20),
+            label: Text(
+              'CANCELLED',
+              style: GoogleFonts.lora(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _isUpdating ? null : () => _updateStatus('CONFIRMED'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 3,
+            ),
+            icon: _isUpdating
+                ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+            )
+                : const Icon(Icons.check_circle, size: 20),
+            label: Text(
+              'CONFIRMED',
+              style: GoogleFonts.lora(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

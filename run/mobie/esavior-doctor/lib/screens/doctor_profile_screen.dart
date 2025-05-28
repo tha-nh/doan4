@@ -14,24 +14,53 @@ class DoctorProfileScreen extends StatefulWidget {
   State<DoctorProfileScreen> createState() => _DoctorProfileScreenState();
 }
 
-class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
+class _DoctorProfileScreenState extends State<DoctorProfileScreen> with SingleTickerProviderStateMixin {
   final _storage = const FlutterSecureStorage();
   Map<String, dynamic>? doctor;
   int? doctorId;
   bool _isLoading = true;
+  late AnimationController _animationController;
+  late Animation<Offset> _slideAnimation;
 
-  // Define color palette
-  static const Color primaryColor = Color(0xFF0288D1); // Blue accent
-  static const Color secondaryColor = Color(0xFFF5F5F5); // Light background
-  static const Color errorColor = Color(0xFFD32F2F); // Red for errors
+  // Color palette to match AppointmentsScreen
+  static const Color primaryColor = Color(0xFF0288D1);
+  static const Color accentColor = Color(0xFFFFB300);
+  static const Color backgroundColor = Color(0xFFF5F7FA);
+  static const Color cardColor = Colors.white;
+  static const Color errorColor = Color(0xFFE57373);
+  static const Color textColor = Color(0xFF1A1A1A);
 
   @override
   void initState() {
     super.initState();
+    // Initialize animation controller
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.2),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutQuad,
+    ));
+    if (mounted) {
+      _animationController.forward();
+    }
     _loadDoctorIdAndFetch();
   }
 
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadDoctorIdAndFetch() async {
+    setState(() {
+      _isLoading = true;
+    });
     try {
       String? idString = await _storage.read(key: 'doctor_id');
       if (idString != null) {
@@ -90,9 +119,14 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       SnackBar(
         content: Text(
           message,
-          style: GoogleFonts.poppins(color: Colors.white),
+          style: GoogleFonts.lora(
+            fontSize: 14,
+            color: Colors.white,
+          ),
         ),
         backgroundColor: errorColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -101,41 +135,61 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: secondaryColor,
+      backgroundColor: backgroundColor,
 
-      body: _isLoading || doctor == null
-          ? const Center(
-        child: CircularProgressIndicator(color: primaryColor),
-      )
-          : ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        children: [
-          _buildProfileHeader(),
-          const SizedBox(height: 24),
-          _buildProfileCard(),
-          const SizedBox(height: 24),
-          _buildActionButtons(),
-        ],
+      body: SafeArea(
+        child: _isLoading || doctor == null
+            ? Center(
+          child: CircularProgressIndicator(
+            color: accentColor,
+            strokeWidth: 4,
+          ),
+        )
+            : SlideTransition(
+          position: _slideAnimation,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildProfileHeader(),
+                const SizedBox(height: 20),
+                _buildProfileCard(),
+                const SizedBox(height: 20),
+                _buildActionButtons(),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildProfileHeader() {
-    return Column(
-      children: [
-        AnimatedOpacity(
-          opacity: doctor!['doctor_image'] != null ? 1.0 : 0.7,
-          duration: const Duration(milliseconds: 500),
-          child: CircleAvatar(
-            radius: 60,
-            backgroundColor: Colors.grey[300],
-            child: doctor!['doctor_image'] != null &&
-                doctor!['doctor_image'].isNotEmpty
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 40,
+            backgroundColor: primaryColor.withOpacity(0.2),
+            child: doctor!['doctor_image'] != null && doctor!['doctor_image'].isNotEmpty
                 ? ClipOval(
               child: Image.network(
                 doctor!['doctor_image'],
-                width: 120,
-                height: 120,
+                width: 80,
+                height: 80,
                 fit: BoxFit.cover,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
@@ -145,86 +199,40 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                 },
                 errorBuilder: (context, error, stackTrace) => const Icon(
                   Icons.person,
-                  size: 60,
+                  size: 40,
                   color: primaryColor,
                 ),
               ),
             )
                 : const Icon(
               Icons.person,
-              size: 60,
+              size: 40,
               color: primaryColor,
             ),
           ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          doctor!['doctor_name'],
-          style: GoogleFonts.poppins(
-            fontSize: 26,
-            fontWeight: FontWeight.w700,
-            color: primaryColor,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProfileCard() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildProfileItem('Tên đăng nhập', doctor!['doctor_username']),
-            _buildProfileItem('Tên', doctor!['doctor_name']),
-            _buildProfileItem('Email', doctor!['doctor_email']),
-            _buildProfileItem('Số điện thoại', doctor!['doctor_phone'].toString()),
-            _buildProfileItem('Địa chỉ', doctor!['doctor_address']),
-            _buildProfileItem('Khoa', 'Khoa ${doctor!['department_id']}'),
-            _buildProfileItem('Giá khám', '${doctor!['doctor_price']} VND'),
-            _buildProfileItem('Tóm tắt', doctor!['summary'] ?? 'Chưa có tóm tắt'),
-            _buildProfileItem(
-                'Mô tả', doctor!['doctor_description'] ?? 'Chưa có mô tả'),
-            _buildProfileItem(
-                'Trạng thái ', doctor!['working_status'] ?? 'Không rõ'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileItem(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+          const SizedBox(width: 12),
           Expanded(
-            flex: 2,
-            child: Text(
-              '$label:',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                color: Colors.black87,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  doctor!['doctor_name'],
+                  style: GoogleFonts.lora(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'ID: ${doctorId ?? 'Không xác định'}',
+                  style: GoogleFonts.lora(
+                    fontSize: 16,
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -232,110 +240,143 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     );
   }
 
+  Widget _buildProfileCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildProfileItem('Tên đăng nhập', doctor!['doctor_username']),
+          _buildProfileItem('Tên', doctor!['doctor_name']),
+          _buildProfileItem('Email', doctor!['doctor_email']),
+          _buildProfileItem('Số điện thoại', doctor!['doctor_phone'].toString()),
+          _buildProfileItem('Địa chỉ', doctor!['doctor_address']),
+          _buildProfileItem('Khoa', 'Khoa ${doctor!['department_id']}'),
+          _buildProfileItem('Giá khám', '${doctor!['doctor_price']} VND'),
+          _buildProfileItem('Tóm tắt', doctor!['summary'] ?? 'Chưa có tóm tắt'),
+          _buildProfileItem('Mô tả', doctor!['doctor_description'] ?? 'Chưa có mô tả'),
+          _buildProfileItem('Trạng thái', doctor!['working_status'] ?? 'Không rõ'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.lora(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: GoogleFonts.lora(
+              fontSize: 14,
+              color: textColor,
+              height: 1.4,
+            ),
+          ),
+          const Divider(height: 20, thickness: 1, color: Colors.grey),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionButtons() {
-    return Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        AnimatedScaleButton(
-          onPressed: () async {
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => EditDoctorScreen(doctorId: doctorId!),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EditDoctorScreen(doctorId: doctorId!),
+                ),
+              );
+              if (result == true) {
+                setState(() {
+                  _isLoading = true;
+                });
+                await fetchDoctor();
+                setState(() {
+                  _isLoading = false;
+                });
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-            );
-            if (result == true) {
-              setState(() {
-                _isLoading = true;
-              });
-              await fetchDoctor();
-              setState(() {
-                _isLoading = false;
-              });
-            }
-          },
-          child: Text(
-            'Sửa thông tin',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
+              elevation: 3,
+            ),
+            icon: const Icon(Icons.edit, size: 20),
+            label: Text(
+              'Sửa thông tin',
+              style: GoogleFonts.lora(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-          color: primaryColor,
         ),
-        const SizedBox(height: 16),
-        AnimatedScaleButton(
-          onPressed: _isLoading ? null : _logout,
-          child: _isLoading
-              ? const CircularProgressIndicator(
-            color: errorColor,
-            strokeWidth: 2,
-          )
-              : Text(
-            'Đăng xuất',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: errorColor,
+        const SizedBox(width: 16),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _isLoading ? null : _logout,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: errorColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 3,
+            ),
+            icon: _isLoading
+                ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+            )
+                : const Icon(Icons.logout, size: 20),
+            label: Text(
+              'Đăng xuất',
+              style: GoogleFonts.lora(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-          color: Colors.white,
-          borderColor: errorColor,
-          isOutlined: true,
         ),
       ],
     );
   }
-}
 
-// Custom widget for animated button
-class AnimatedScaleButton extends StatelessWidget {
-  final VoidCallback? onPressed;
-  final Widget child;
-  final Color color;
-  final Color? borderColor;
-  final bool isOutlined;
-
-  const AnimatedScaleButton({
-    super.key,
-    required this.onPressed,
-    required this.child,
-    required this.color,
-    this.borderColor,
-    this.isOutlined = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder(
-      tween: Tween<double>(begin: 1.0, end: 1.0),
-      duration: const Duration(milliseconds: 100),
-      builder: (context, scale, child) {
-        return Transform.scale(
-          scale: scale,
-          child: Material(
-            color: isOutlined ? Colors.transparent : color,
-            borderRadius: BorderRadius.circular(12),
-            elevation: isOutlined ? 0 : 2,
-            child: InkWell(
-              onTap: onPressed,
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                width: double.infinity,
-                height: 50,
-                decoration: BoxDecoration(
-                  border: isOutlined
-                      ? Border.all(color: borderColor ?? Colors.transparent)
-                      : null,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(child: child),
-              ),
-            ),
-          ),
-        );
-      },
-      child: child,
-    );
-  }
 }
