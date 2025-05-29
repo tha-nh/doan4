@@ -247,8 +247,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
                   _buildDetailRow('Giá', '${appointment['price']?.toString() ?? '0'} VND'),
                 ]),
                 if (status == 'PENDING') ...[
-                  const SizedBox(height: 20),
-                  _buildSectionHeader('Hành Động'),
+
                   const SizedBox(height: 12),
                   _buildActionButtons(),
                 ],

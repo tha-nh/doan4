@@ -25,8 +25,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int? doctorId;
   int _selectedIndex = 1;
   final List<String> _titles = [
-    'Lịch Khám',
     'Hồ Sơ Y Tế',
+    'Lịch Khám',
     'Hồ Sơ Bác Sĩ',
   ];
 

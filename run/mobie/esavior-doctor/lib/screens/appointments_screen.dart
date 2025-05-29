@@ -321,11 +321,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: primaryColor,
+        backgroundColor: backgroundColor,
 
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
+            icon: const Icon(Icons.menu, color: Colors.black),
             onPressed: _showSearchDialog,
           ),
         ],
