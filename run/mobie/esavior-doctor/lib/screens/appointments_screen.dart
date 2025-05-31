@@ -28,6 +28,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 // Định nghĩa task cho Workmanager
 const String fetchAppointmentsTask = 'fetchAppointmentsTask';
 
+// 2. SỬA TRONG callbackDispatcher (Workmanager) - Đổi 15p thành 5p
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
@@ -64,7 +65,7 @@ void callbackDispatcher() {
                 final parsedMedicalDay = DateTime.parse(medicalDay);
                 if (parsedMedicalDay.isAtSameMomentAs(todayStart)) {
                   final slot = a['slot'];
-                  const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
+                  const timeSlots = [8, 9, 10, 11, 13, 14, 15, 23];
                   if (slot is int && slot >= 1 && slot <= 8) {
                     final appointmentHour = timeSlots[slot - 1];
                     final appointmentTime = DateTime(
@@ -78,32 +79,43 @@ void callbackDispatcher() {
                         ? a['patient'][0]['patient_name'] ?? 'Bệnh nhân ID: ${a['patient_id']}'
                         : 'Bệnh nhân ID: ${a['patient_id'] ?? 'Không xác định'}';
 
-                    // Chỉ thông báo trước 15 phút
-                    if (timeUntilAppointment.inMinutes > 0 && timeUntilAppointment.inMinutes <= 20) {
-                      print('Lập lịch thông báo 15p cho: $patientName, thời gian: $appointmentTime');
-                      const androidPlatformChannelSpecifics = AndroidNotificationDetails(
-                        'appointment_channel_15min',
-                        'Appointment Reminders 15min',
-                        channelDescription: 'Notifications 15 minutes before appointments',
+                    // SỬA: Chỉ thông báo trước 5 phút (thay vì 15 phút)
+                    // Kiểm tra trong khoảng 10 phút để có thời gian lập lịch
+                    if (timeUntilAppointment.inMinutes > 0 && timeUntilAppointment.inMinutes <= 10) {
+                      print('Lập lịch thông báo 5p cho: $patientName, thời gian: $appointmentTime');
+
+                      final androidPlatformChannelSpecifics = AndroidNotificationDetails(
+                        'appointment_channel_5min', // SỬA: channel name
+                        'Appointment Reminders 5min', // SỬA: channel name
+                        channelDescription: 'Notifications 5 minutes before appointments', // SỬA: description
                         importance: Importance.max,
                         priority: Priority.high,
                         showWhen: true,
                         playSound: true,
                         enableVibration: true,
+                        enableLights: true,
+                        ledColor: Colors.blue,
+                        ledOnMs: 1000,
+                        ledOffMs: 500,
+                        autoCancel: false,
+                        styleInformation: BigTextStyleInformation(
+                          'Lịch hẹn với $patientName vào lúc ${'$appointmentHour:00'} chỉ còn 5 phút nữa! Hãy chuẩn bị sẵn sàng.', // SỬA: 15p → 5p
+                        ),
                       );
-                      const platformChannelSpecifics = NotificationDetails(
+
+                      final platformChannelSpecifics = NotificationDetails(
                         android: androidPlatformChannelSpecifics,
                       );
+
                       await flutterLocalNotificationsPlugin.zonedSchedule(
-                        i, // ID đơn giản
-                        'Lịch hẹn sắp tới - 15 phút',
-                        'Lịch hẹn với $patientName vào lúc ${'$appointmentHour:00'} chỉ còn 15 phút nữa! Hãy chuẩn bị sẵn sàng.',
-                        tz.TZDateTime.from(appointmentTime.subtract(Duration(minutes: 15)), vietnamTimeZone),
+                        i,
+                        'Lịch hẹn sắp tới - 5 phút', // SỬA: title
+                        'Lịch hẹn với $patientName vào lúc ${'$appointmentHour:00'} chỉ còn 5 phút nữa! Hãy chuẩn bị sẵn sàng.', // SỬA: body
+                        tz.TZDateTime.from(appointmentTime.subtract(Duration(minutes: 5)), vietnamTimeZone), // SỬA: 15 → 5
                         platformChannelSpecifics,
                         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-                        matchDateTimeComponents: DateTimeComponents.time,
                       );
-                      print('Thông báo 15p đã được lập lịch cho ID: $i');
+                      print('Thông báo 5p đã được lập lịch cho ID: $i'); // SỬA: log
                     }
                   }
                 }
@@ -148,8 +160,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
   // Initialize flutter_local_notifications
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
+// 1. SỬA TIMESLOTS: Đổi 16 thành 23
   String getTimeSlot(dynamic slot) {
-    const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
+    const timeSlots = [8, 9, 10, 11, 13, 14, 15, 23]; // Đổi 16 thành 23
     if (slot is int && slot >= 1 && slot <= 8) {
       return '${timeSlots[slot - 1]}:00';
     }
@@ -225,50 +238,274 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
     tz.initializeTimeZones();
   }
 
-  // Initialize notification settings
-  // Cải thiện hàm _initializeNotifications
+// Thêm hàm này vào class _AppointmentsScreenState
+  Future<void> _checkAndRequestPermissionsBasedOnVersion() async {
+    if (!Platform.isAndroid) return;
+
+    try {
+      final deviceInfo = DeviceInfoPlugin();
+      final androidInfo = await deviceInfo.androidInfo;
+      final sdkVersion = androidInfo.version.sdkInt;
+
+      print('Android SDK Version: $sdkVersion');
+
+      // Xử lý quyền dựa trên phiên bản Android
+      if (sdkVersion >= 33) {
+        // Android 13+ (API 33+)
+        print('Android 13+: Kiểm tra quyền thông báo và exact alarm');
+
+        // Kiểm tra quyền thông báo
+        final notificationStatus = await Permission.notification.status;
+        if (!notificationStatus.isGranted) {
+          await Permission.notification.request();
+        }
+
+        // Kiểm tra quyền exact alarm
+        final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
+        if (!exactAlarmStatus.isGranted) {
+          await Permission.scheduleExactAlarm.request();
+        }
+
+        _hasExactAlarmPermission = await Permission.scheduleExactAlarm.isGranted;
+
+      } else if (sdkVersion >= 31) {
+        // Android 12 (API 31-32)
+        print('Android 12: Kiểm tra quyền exact alarm');
+
+        final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
+        if (!exactAlarmStatus.isGranted) {
+          await Permission.scheduleExactAlarm.request();
+        }
+
+        _hasExactAlarmPermission = await Permission.scheduleExactAlarm.isGranted;
+
+      } else {
+        // Android 11 hoặc thấp hơn (API <= 30)
+        print('Android 11 hoặc thấp hơn: Không cần quyền đặc biệt cho exact alarm');
+        _hasExactAlarmPermission = true;
+      }
+
+      // Kiểm tra quyền tối ưu hóa pin (tất cả phiên bản từ Android 6+)
+      if (sdkVersion >= 23) {
+        await _requestDisableBatteryOptimization();
+      }
+
+      print('Trạng thái quyền exact alarm: $_hasExactAlarmPermission');
+
+    } catch (e) {
+      print('Lỗi khi kiểm tra phiên bản và quyền: $e');
+      _hasExactAlarmPermission = false;
+    }
+  }
+
+// Cập nhật hàm _requestDisableBatteryOptimization
+  Future<void> _requestDisableBatteryOptimization() async {
+    if (!Platform.isAndroid) return;
+
+    try {
+      // Kiểm tra quyền
+      final status = await Permission.ignoreBatteryOptimizations.status;
+      print('Trạng thái tối ưu hóa pin: $status');
+
+      if (!status.isGranted) {
+        // Yêu cầu quyền
+        final result = await Permission.ignoreBatteryOptimizations.request();
+        print('Kết quả yêu cầu tắt tối ưu hóa pin: $result');
+
+        if (!result.isGranted && mounted) {
+          // Hiển thị hướng dẫn thủ công
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('Cần tắt tối ưu hóa pin', style: GoogleFonts.lora(fontWeight: FontWeight.bold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Để thông báo hoạt động đúng giờ, vui lòng:',
+                    style: GoogleFonts.lora(),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '1. Vào Cài đặt > Ứng dụng > esavior_doctor',
+                    style: GoogleFonts.lora(fontSize: 14),
+                  ),
+                  Text(
+                    '2. Chọn "Pin" hoặc "Tiết kiệm pin"',
+                    style: GoogleFonts.lora(fontSize: 14),
+                  ),
+                  Text(
+                    '3. Chọn "Không tối ưu hóa" hoặc "Không giới hạn"',
+                    style: GoogleFonts.lora(fontSize: 14),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Mỗi thiết bị có thể có cách thực hiện khác nhau.',
+                    style: GoogleFonts.lora(fontSize: 12, fontStyle: FontStyle.italic),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('Để sau', style: GoogleFonts.lora()),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    openAppSettings();
+                  },
+                  child: Text('Mở cài đặt', style: GoogleFonts.lora()),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Lỗi khi yêu cầu tắt tối ưu hóa pin: $e');
+    }
+  }
+
+// Cập nhật hàm _initializeNotifications
   Future<void> _initializeNotifications() async {
+    // Khởi tạo plugin
     const AndroidInitializationSettings initializationSettingsAndroid =
     AndroidInitializationSettings('@mipmap/ic_launcher');
+
     const InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
     );
 
-    await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
-
-    // Tạo notification channels
-    const AndroidNotificationChannel channel15min = AndroidNotificationChannel(
-      'appointment_channel_15min',
-      'Appointment Reminders 15min',
-      description: 'Notifications 15 minutes before appointments',
-      importance: Importance.max,
-      playSound: true,
-      enableVibration: true,
+    await _flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        print('Người dùng nhấn vào thông báo: ${response.payload}');
+      },
     );
 
-    const AndroidNotificationChannel testChannel = AndroidNotificationChannel(
-      'test_notification_channel',
-      'Test Notifications',
-      description: 'Test notifications for 1 minute',
+    // Tạo kênh thông báo với cài đặt mạnh hơn
+    const AndroidNotificationChannel highImportanceChannel = AndroidNotificationChannel(
+      'high_importance_channel',  // ID
+      'Thông báo quan trọng',     // Tên
+      description: 'Thông báo lịch hẹn và nhắc nhở quan trọng',
       importance: Importance.max,
       playSound: true,
       enableVibration: true,
+      enableLights: true,
+      ledColor: Color.fromARGB(255, 255, 0, 0),
+      showBadge: true,
     );
 
     final androidPlugin = _flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
     if (androidPlugin != null) {
-      await androidPlugin.createNotificationChannel(channel15min);
-      await androidPlugin.createNotificationChannel(testChannel);
+      await androidPlugin.createNotificationChannel(highImportanceChannel);
 
       // Yêu cầu quyền thông báo
       final granted = await androidPlugin.requestNotificationsPermission();
       print('Quyền thông báo Android: ${granted ?? false}');
+
+      // Kiểm tra các kênh đã tạo
+      final channels = await androidPlugin.getNotificationChannels();
+      if (channels != null) {
+        for (var channel in channels) {
+          print('Kênh: ${channel.id} - ${channel.name} - Importance: ${channel.importance}');
+        }
+      }
     }
 
-    // Kiểm tra và xử lý quyền SCHEDULE_EXACT_ALARM
-    await _checkAndRequestExactAlarmPermission();
+    // Kiểm tra và yêu cầu quyền dựa trên phiên bản Android
+    await _checkAndRequestPermissionsBasedOnVersion();
+  }
+
+// Thêm hàm test thông báo nhanh (5 giây)
+  Future<void> _testQuickNotification() async {
+    try {
+      final now = DateTime.now();
+      final scheduledTime = now.add(const Duration(seconds: 5));
+
+      // Sử dụng thông báo đơn giản nhất có thể
+      final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'high_importance_channel',
+        'Thông báo quan trọng',
+        channelDescription: 'Thông báo lịch hẹn và nhắc nhở quan trọng',
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+        fullScreenIntent: true,
+        category: AndroidNotificationCategory.alarm,
+        visibility: NotificationVisibility.public,
+        autoCancel: false,
+      );
+
+      final NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidDetails,
+      );
+
+      // Lập lịch thông báo sau 5 giây
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        888,
+        'Test nhanh - 5 giây',
+        'Thông báo này sẽ hiển thị sau 5 giây. Thời gian lập: ${now.toString()}',
+        tz.TZDateTime.from(scheduledTime, tz.getLocation('Asia/Ho_Chi_Minh')),
+        platformChannelSpecifics,
+        androidScheduleMode: _hasExactAlarmPermission
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+
+      print('✅ Đã lập lịch thông báo nhanh sau 5 giây');
+      print('  - Thời gian hiện tại: $now');
+      print('  - Thời gian dự kiến: $scheduledTime');
+      print('  - Exact alarm permission: $_hasExactAlarmPermission');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Đã lập lịch thông báo sau 5 giây',
+              style: GoogleFonts.lora(fontSize: 14, color: Colors.white),
+            ),
+            backgroundColor: Colors.blue,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Lỗi khi lập lịch thông báo nhanh: $e');
+    }
+  }
+
+  // Thêm hàm test thông báo ngay lập tức để kiểm tra
+  Future<void> _showImmediateNotification() async {
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'test_notification_channel',
+      'Test Notifications',
+      channelDescription: 'Test notifications',
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: true,
+      playSound: true,
+      enableVibration: true,
+    );
+
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidDetails,
+    );
+
+    await _flutterLocalNotificationsPlugin.show(
+      0,
+      'Thông báo ngay lập tức',
+      'Đây là thông báo test ngay lập tức để kiểm tra hệ thống!',
+      platformChannelSpecifics,
+    );
+
+    print('✅ Đã hiển thị thông báo ngay lập tức');
   }
 
   // Hàm mới để kiểm tra và yêu cầu quyền exact alarm
@@ -357,8 +594,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
     );
   }
 
-  // Schedule notification for appointment (chỉ 15 phút)
-  // Cải thiện hàm _scheduleNotification
+// 1. SỬA HÀM _scheduleNotification - Đổi 15p thành 5p
   Future<void> _scheduleNotification({
     required int id,
     required String patientName,
@@ -368,26 +604,78 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
     try {
       final vietnamTimeZone = tz.getLocation('Asia/Ho_Chi_Minh');
       final currentTime = DateTime.now();
+
+      // Tính thời gian thông báo (5 phút trước giờ hẹn) - SỬA: 15p → 5p
+      final notificationTime = appointmentTime.subtract(const Duration(minutes: 5));
+
+      // Kiểm tra xem thời gian thông báo đã qua chưa
+      if (notificationTime.isBefore(currentTime)) {
+        print('⚠️ Thời gian thông báo đã qua, không thể lập lịch cho: $patientName lúc $timeSlot');
+
+        // Nếu thời gian thông báo đã qua nhưng lịch hẹn vẫn còn trong tương lai
+        // và còn ít nhất 1 phút, thì hiển thị thông báo ngay lập tức
+        if (appointmentTime.isAfter(currentTime) &&
+            appointmentTime.difference(currentTime).inMinutes >= 1) {
+
+          print('🔄 Chuyển sang thông báo ngay lập tức vì thời gian thông báo đã qua');
+
+          final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+            'appointment_immediate_channel',
+            'Immediate Appointment Reminders',
+            channelDescription: 'Immediate notifications for upcoming appointments',
+            importance: Importance.max,
+            priority: Priority.high,
+            showWhen: true,
+            playSound: true,
+            enableVibration: true,
+            enableLights: true,
+            ledColor: Colors.red,
+            ledOnMs: 1000,
+            ledOffMs: 500,
+          );
+
+          final NotificationDetails platformChannelSpecifics = NotificationDetails(
+            android: androidDetails,
+          );
+
+          // Hiển thị thông báo ngay lập tức thay vì lập lịch
+          await _flutterLocalNotificationsPlugin.show(
+            id,
+            'Lịch hẹn sắp tới!',
+            'Lịch hẹn với $patientName vào lúc $timeSlot sắp diễn ra! Còn ${appointmentTime.difference(currentTime).inMinutes} phút nữa.',
+            platformChannelSpecifics,
+          );
+
+          print('✅ Đã hiển thị thông báo ngay lập tức cho: $patientName lúc $timeSlot');
+        }
+
+        return;
+      }
+
       final timeUntilAppointment = appointmentTime.difference(currentTime);
 
-      // Chỉ thông báo trước 15 phút nếu còn thời gian
       if (timeUntilAppointment.inMinutes <= 0) {
         print('Lịch hẹn đã qua, không lập thông báo');
         return;
       }
 
       final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        'appointment_channel_15min',
-        'Appointment Reminders 15min',
-        channelDescription: 'Notifications 15 minutes before appointments',
+        'appointment_channel_5min', // SỬA: channel name
+        'Appointment Reminders 5min', // SỬA: channel name
+        channelDescription: 'Notifications 5 minutes before appointments', // SỬA: description
         importance: Importance.max,
         priority: Priority.high,
         showWhen: true,
         playSound: true,
         enableVibration: true,
+        // SỬA: Nội dung thông báo 15p → 5p
         styleInformation: BigTextStyleInformation(
-          'Lịch hẹn với $patientName vào lúc $timeSlot chỉ còn 15 phút nữa! Hãy chuẩn bị sẵn sàng.',
+          'Lịch hẹn với $patientName vào lúc $timeSlot chỉ còn 5 phút nữa! Hãy chuẩn bị sẵn sàng.',
         ),
+        enableLights: true,
+        ledColor: Colors.blue,
+        ledOnMs: 1000,
+        ledOffMs: 500,
       );
 
       final NotificationDetails platformChannelSpecifics = NotificationDetails(
@@ -395,46 +683,39 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
       );
 
       final tzScheduledTime = tz.TZDateTime.from(
-        appointmentTime.subtract(const Duration(minutes: 15)),
+        notificationTime,
         vietnamTimeZone,
       );
 
-      // Chọn schedule mode dựa trên quyền
-      AndroidScheduleMode scheduleMode;
-      if (_hasExactAlarmPermission) {
-        scheduleMode = AndroidScheduleMode.exactAllowWhileIdle;
-        print('Sử dụng exact alarm mode');
-      } else {
-        scheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
-        print('Sử dụng inexact alarm mode (không có quyền exact)');
-      }
+      AndroidScheduleMode scheduleMode = _hasExactAlarmPermission
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle;
 
       await _flutterLocalNotificationsPlugin.zonedSchedule(
         id,
-        'Lịch hẹn sắp tới - 15 phút',
-        'Lịch hẹn với $patientName vào lúc $timeSlot chỉ còn 15 phút nữa! Hãy chuẩn bị sẵn sàng.',
+        'Lịch hẹn sắp tới - 5 phút', // SỬA: title
+        'Lịch hẹn với $patientName vào lúc $timeSlot chỉ còn 5 phút nữa! Hãy chuẩn bị sẵn sàng.', // SỬA: body
         tzScheduledTime,
         platformChannelSpecifics,
         androidScheduleMode: scheduleMode,
-        matchDateTimeComponents: DateTimeComponents.time,
       );
 
-      print('✅ Đã lập lịch thông báo 15p cho: $patientName lúc $tzScheduledTime (ID $id)');
+      print('✅ Đã lập lịch thông báo 5p cho: $patientName lúc $tzScheduledTime (ID $id)'); // SỬA: log
 
     } catch (e) {
       print('❌ Lỗi khi lập lịch thông báo: $e');
-      // Không throw exception để không crash app
     }
   }
 
-  // Hàm test thông báo 1 phút
+// Thay thế hàm _scheduleTestNotification đã sửa lỗi const
   Future<void> _scheduleTestNotification() async {
     try {
       final vietnamTimeZone = tz.getLocation('Asia/Ho_Chi_Minh');
       final now = DateTime.now();
       final testTime = now.add(const Duration(minutes: 1));
 
-      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      // Loại bỏ const vì sử dụng BigTextStyleInformation
+      final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
         'test_notification_channel',
         'Test Notifications',
         channelDescription: 'Test notifications for 1 minute',
@@ -443,24 +724,20 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
         showWhen: true,
         playSound: true,
         enableVibration: true,
-        styleInformation: BigTextStyleInformation(
+        styleInformation: const BigTextStyleInformation(
           'Đây là thông báo test sau 1 phút. Hệ thống thông báo đang hoạt động bình thường!',
         ),
       );
 
-      const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      final NotificationDetails platformChannelSpecifics = NotificationDetails(
         android: androidDetails,
       );
 
       final tzScheduledTime = tz.TZDateTime.from(testTime, vietnamTimeZone);
 
-      // Chọn schedule mode dựa trên quyền
-      AndroidScheduleMode scheduleMode;
-      if (_hasExactAlarmPermission) {
-        scheduleMode = AndroidScheduleMode.exactAllowWhileIdle;
-      } else {
-        scheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
-      }
+      AndroidScheduleMode scheduleMode = _hasExactAlarmPermission
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle;
 
       await _flutterLocalNotificationsPlugin.zonedSchedule(
         999999,
@@ -469,12 +746,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
         tzScheduledTime,
         platformChannelSpecifics,
         androidScheduleMode: scheduleMode,
-        matchDateTimeComponents: DateTimeComponents.time,
       );
 
       print('✅ Đã lập lịch test thông báo lúc $tzScheduledTime');
 
-      // Hiển thị thông báo xác nhận
       if (mounted) {
         final message = _hasExactAlarmPermission
             ? 'Đã hẹn thông báo test chính xác sau 1 phút!'
@@ -513,6 +788,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
       }
     }
   }
+
 
   // Schedule background fetch
   void _scheduleBackgroundFetch() {
@@ -585,7 +861,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
     }
   }
 
-  // Schedule notifications for appointments today (chỉ 15 phút)
+// 3. SỬA TRONG _scheduleNotificationsForToday() - Đổi điều kiện từ 20p thành 10p
   void _scheduleNotificationsForToday() {
     final now = tz.TZDateTime.now(tz.getLocation('Asia/Ho_Chi_Minh'));
     final todayStart = tz.TZDateTime(tz.getLocation('Asia/Ho_Chi_Minh'), now.year, now.month, now.day);
@@ -609,7 +885,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
         final parsedMedicalDay = DateTime.parse(medicalDay);
         if (parsedMedicalDay.isAtSameMomentAs(todayStart)) {
           final slot = a['slot'];
-          const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
+          const timeSlots = [8, 9, 10, 11, 13, 14, 15, 23];
           if (slot is int && slot >= 1 && slot <= 8) {
             final appointmentHour = timeSlots[slot - 1];
             final appointmentTime = DateTime(
@@ -620,8 +896,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
             );
             final timeUntilAppointment = appointmentTime.difference(currentTime);
 
-            // Lập lịch thông báo nếu còn thời gian (tối đa 20 phút trước)
-            if (timeUntilAppointment.inMinutes > 0 && timeUntilAppointment.inMinutes <= 20) {
+            // SỬA: Lập lịch thông báo nếu còn thời gian (tối đa 10 phút trước thay vì 20 phút)
+            if (timeUntilAppointment.inMinutes > 0 && timeUntilAppointment.inMinutes <= 10) {
               final patientName = a['patient'] != null && a['patient'].isNotEmpty
                   ? a['patient'][0]['patient_name'] ?? 'Bệnh nhân ID: ${a['patient_id']}'
                   : 'Bệnh nhân ID: ${a['patient_id'] ?? 'Không xác định'}';
@@ -645,6 +921,73 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
     }
   }
 
+  // Thêm hàm kiểm tra thông báo đã lập lịch
+  Future<void> _checkPendingNotifications() async {
+    try {
+      final pendingNotifications = await _flutterLocalNotificationsPlugin.pendingNotificationRequests();
+
+      print('Số lượng thông báo đang chờ: ${pendingNotifications.length}');
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text(
+                'Thông báo đã lập lịch',
+                style: GoogleFonts.lora(fontWeight: FontWeight.bold),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tổng số: ${pendingNotifications.length} thông báo',
+                      style: GoogleFonts.lora(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 10),
+                    ...pendingNotifications.map((notification) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Text(
+                        'ID: ${notification.id} - ${notification.title ?? "Không có tiêu đề"}',
+                        style: GoogleFonts.lora(fontSize: 12),
+                      ),
+                    )).toList(),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('Đóng', style: GoogleFonts.lora()),
+                ),
+                if (pendingNotifications.isNotEmpty)
+                  TextButton(
+                    onPressed: () async {
+                      await _flutterLocalNotificationsPlugin.cancelAll();
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Đã hủy tất cả thông báo đã lập lịch',
+                            style: GoogleFonts.lora(),
+                          ),
+                        ),
+                      );
+                    },
+                    child: Text('Hủy tất cả', style: GoogleFonts.lora(color: Colors.red)),
+                  ),
+              ],
+            );
+          },
+        );
+      }
+    } catch (e) {
+      print('Lỗi khi kiểm tra thông báo: $e');
+    }
+  }
+
   String _formatDate(String? date) {
     if (date == null) return 'Chưa xác định';
     try {
@@ -655,7 +998,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
     }
   }
 
-  // Hàm lọc appointments theo filter type
+// 3. SỬA TRONG _getFilteredAppointments()
   List _getFilteredAppointments() {
     final now = tz.TZDateTime.now(tz.getLocation('Asia/Ho_Chi_Minh'));
     final todayStart = tz.TZDateTime(tz.getLocation('Asia/Ho_Chi_Minh'), now.year, now.month, now.day);
@@ -678,7 +1021,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
               return false;
             }
             final slot = a['slot'];
-            const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
+            const timeSlots = [8, 9, 10, 11, 13, 14, 15, 23]; // SỬA: Đổi 16 thành 23
             if (slot is int && slot >= 1 && slot <= 8) {
               final appointmentHour = timeSlots[slot - 1];
               return appointmentHour > currentHour; // Chỉ hiển thị những giờ chưa qua
@@ -694,7 +1037,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
               // Nếu là hôm nay, kiểm tra giờ
               if (parsedMedicalDay.isAtSameMomentAs(todayStart)) {
                 final slot = a['slot'];
-                const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
+                const timeSlots = [8, 9, 10, 11, 13, 14, 15, 23]; // SỬA: Đổi 16 thành 23
                 if (slot is int && slot >= 1 && slot <= 8) {
                   final appointmentHour = timeSlots[slot - 1];
                   return appointmentHour > currentHour;
@@ -714,7 +1057,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
               // Nếu là hôm nay, kiểm tra giờ
               if (parsedMedicalDay.isAtSameMomentAs(todayStart)) {
                 final slot = a['slot'];
-                const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
+                const timeSlots = [8, 9, 10, 11, 13, 14, 15, 23]; // SỬA: Đổi 16 thành 23
                 if (slot is int && slot >= 1 && slot <= 8) {
                   final appointmentHour = timeSlots[slot - 1];
                   return appointmentHour > currentHour;
@@ -797,12 +1140,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
     );
   }
 
-  // Widget hiển thị thông tin thông báo (cập nhật)
-  // Cập nhật widget thông tin thông báo
+// 4. SỬA WIDGET THÔNG TIN THÔNG BÁO
   Widget _buildNotificationInfo() {
     final statusText = _hasExactAlarmPermission
-        ? 'Thông báo chính xác: 15 phút trước giờ hẹn'
-        : 'Thông báo gần đúng: ~15 phút trước giờ hẹn';
+        ? 'Thông báo chính xác: 5 phút trước giờ hẹn' // SỬA: 15p → 5p
+        : 'Thông báo gần đúng: ~5 phút trước giờ hẹn'; // SỬA: 15p → 5p
 
     final statusColor = _hasExactAlarmPermission ? Colors.green : Colors.orange;
 
@@ -846,30 +1188,558 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
     );
   }
 
-  // Widget nút test thông báo
+  // Thêm hàm kiểm tra quyền chi tiết
+  Future<void> _checkDetailedPermissions() async {
+    print('\n=== KIỂM TRA QUYỀN CHI TIẾT ===');
+
+    // Kiểm tra quyền thông báo cơ bản
+    final androidPlugin = _flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+    if (androidPlugin != null) {
+      final notificationPermission = await androidPlugin.areNotificationsEnabled();
+      print('Quyền thông báo cơ bản: $notificationPermission');
+    }
+
+    // Kiểm tra quyền exact alarm
+    if (Platform.isAndroid) {
+      try {
+        final deviceInfo = DeviceInfoPlugin();
+        final androidInfo = await deviceInfo.androidInfo;
+        print('Android SDK: ${androidInfo.version.sdkInt}');
+
+        if (androidInfo.version.sdkInt >= 31) {
+          final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
+          print('Quyền SCHEDULE_EXACT_ALARM: $exactAlarmStatus');
+          _hasExactAlarmPermission = exactAlarmStatus.isGranted;
+        } else {
+          _hasExactAlarmPermission = true;
+          print('Android < 12: Không cần quyền SCHEDULE_EXACT_ALARM');
+        }
+      } catch (e) {
+        print('Lỗi kiểm tra quyền: $e');
+      }
+    }
+
+    // Kiểm tra notification channels
+    if (androidPlugin != null) {
+      try {
+        final channels = await androidPlugin.getNotificationChannels();
+        print('Số lượng notification channels: ${channels?.length ?? 0}');
+        if (channels != null) {
+          for (var channel in channels) {
+            print('Channel: ${channel.id} - ${channel.name} - Importance: ${channel.importance}');
+          }
+        }
+      } catch (e) {
+        print('Lỗi kiểm tra channels: $e');
+      }
+    }
+
+    print('=== KẾT THÚC KIỂM TRA ===\n');
+  }
+
+// Cải tiến hàm test thông báo với nhiều khoảng thời gian
+  Future<void> _scheduleMultipleTestNotifications() async {
+    try {
+      await _checkDetailedPermissions();
+
+      final vietnamTimeZone = tz.getLocation('Asia/Ho_Chi_Minh');
+      final now = DateTime.now();
+
+      print('\n=== LẬP LỊCH NHIỀU THÔNG BÁO TEST ===');
+      print('Thời gian hiện tại: $now');
+
+      // Test sau 30 giây
+      await _scheduleTestNotificationWithDelay(
+        id: 100,
+        title: 'Test 30 giây',
+        body: 'Thông báo test sau 30 giây',
+        delaySeconds: 30,
+      );
+
+      // Test sau 1 phút
+      await _scheduleTestNotificationWithDelay(
+        id: 101,
+        title: 'Test 1 phút',
+        body: 'Thông báo test sau 1 phút',
+        delaySeconds: 60,
+      );
+
+      // Test sau 2 phút
+      await _scheduleTestNotificationWithDelay(
+        id: 102,
+        title: 'Test 2 phút',
+        body: 'Thông báo test sau 2 phút',
+        delaySeconds: 120,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Đã lập lịch 3 thông báo test: 30s, 1p, 2p',
+              style: GoogleFonts.lora(fontSize: 14, color: Colors.white),
+            ),
+            backgroundColor: Colors.blue,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+
+    } catch (e) {
+      print('❌ Lỗi khi lập lịch multiple test: $e');
+    }
+  }
+
+// Hàm helper để lập lịch thông báo với delay cụ thể
+  Future<void> _scheduleTestNotificationWithDelay({
+    required int id,
+    required String title,
+    required String body,
+    required int delaySeconds,
+  }) async {
+    try {
+      final vietnamTimeZone = tz.getLocation('Asia/Ho_Chi_Minh');
+      final now = DateTime.now();
+      final scheduledTime = now.add(Duration(seconds: delaySeconds));
+
+      // Tạo notification details với ID channel cụ thể
+      final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'test_notification_channel',
+        'Test Notifications',
+        channelDescription: 'Test notifications for debugging',
+        importance: Importance.max,
+        priority: Priority.high,
+        showWhen: true,
+        playSound: true,
+        enableVibration: true,
+        enableLights: true,
+        ledColor: Colors.red,
+        ledOnMs: 1000,
+        ledOffMs: 500,
+        autoCancel: false,
+        ongoing: false,
+        styleInformation: BigTextStyleInformation(
+          '$body\nThời gian lập lịch: ${now.toString()}\nThời gian dự kiến: ${scheduledTime.toString()}',
+        ),
+      );
+
+      final NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidDetails,
+      );
+
+      final tzScheduledTime = tz.TZDateTime.from(scheduledTime, vietnamTimeZone);
+
+      print('Lập lịch thông báo ID $id:');
+      print('  - Thời gian hiện tại: $now');
+      print('  - Thời gian lập lịch: $scheduledTime');
+      print('  - TZ Scheduled time: $tzScheduledTime');
+      print('  - Delay: $delaySeconds giây');
+      print('  - Exact alarm permission: $_hasExactAlarmPermission');
+
+      AndroidScheduleMode scheduleMode = _hasExactAlarmPermission
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle;
+
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tzScheduledTime,
+        platformChannelSpecifics,
+        androidScheduleMode: scheduleMode,
+      );
+
+      print('✅ Đã lập lịch thông báo ID $id thành công');
+
+    } catch (e) {
+      print('❌ Lỗi khi lập lịch thông báo ID $id: $e');
+    }
+  }
+
+// Cải tiến hàm kiểm tra thông báo pending
+  Future<void> _checkPendingNotificationsDetailed() async {
+    try {
+      final pendingNotifications = await _flutterLocalNotificationsPlugin.pendingNotificationRequests();
+      final now = DateTime.now();
+
+      print('\n=== THÔNG BÁO ĐANG CHỜ ===');
+      print('Thời gian kiểm tra: $now');
+      print('Số lượng thông báo đang chờ: ${pendingNotifications.length}');
+
+      for (var notification in pendingNotifications) {
+        print('ID: ${notification.id}');
+        print('  - Tiêu đề: ${notification.title}');
+        print('  - Nội dung: ${notification.body}');
+        print('  - Payload: ${notification.payload}');
+        print('---');
+      }
+      print('=== KẾT THÚC ===\n');
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text(
+                'Thông báo đã lập lịch',
+                style: GoogleFonts.lora(fontWeight: FontWeight.bold),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Thời gian kiểm tra: ${DateFormat('HH:mm:ss dd/MM/yyyy').format(now)}',
+                      style: GoogleFonts.lora(fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tổng số: ${pendingNotifications.length} thông báo',
+                      style: GoogleFonts.lora(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 10),
+                    ...pendingNotifications.map((notification) => Container(
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'ID: ${notification.id}',
+                            style: GoogleFonts.lora(fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'Tiêu đề: ${notification.title ?? "Không có"}',
+                            style: GoogleFonts.lora(fontSize: 11),
+                          ),
+                          Text(
+                            'Nội dung: ${notification.body ?? "Không có"}',
+                            style: GoogleFonts.lora(fontSize: 11),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    )).toList(),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('Đóng', style: GoogleFonts.lora()),
+                ),
+                if (pendingNotifications.isNotEmpty)
+                  TextButton(
+                    onPressed: () async {
+                      await _flutterLocalNotificationsPlugin.cancelAll();
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Đã hủy tất cả ${pendingNotifications.length} thông báo',
+                            style: GoogleFonts.lora(),
+                          ),
+                        ),
+                      );
+                    },
+                    child: Text('Hủy tất cả', style: GoogleFonts.lora(color: Colors.red)),
+                  ),
+              ],
+            );
+          },
+        );
+      }
+    } catch (e) {
+      print('Lỗi khi kiểm tra thông báo: $e');
+    }
+  }
+
+// Hàm kiểm tra và yêu cầu tắt tối ưu hóa pin
+  Future<void> _requestBatteryOptimizationDisable() async {
+    if (Platform.isAndroid) {
+      try {
+        final status = await Permission.ignoreBatteryOptimizations.status;
+        print('Trạng thái tối ưu hóa pin: $status');
+
+        if (!status.isGranted) {
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text(
+                    'Tắt tối ưu hóa pin',
+                    style: GoogleFonts.lora(fontWeight: FontWeight.bold),
+                  ),
+                  content: Text(
+                    'Để thông báo hoạt động đúng cách, vui lòng tắt tối ưu hóa pin cho ứng dụng này.\n\n'
+                        'Điều này sẽ đảm bảo thông báo được hiển thị đúng giờ.',
+                    style: GoogleFonts.lora(),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text('Bỏ qua', style: GoogleFonts.lora()),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        Navigator.of(context).pop();
+                        await Permission.ignoreBatteryOptimizations.request();
+                      },
+                      child: Text('Cài đặt', style: GoogleFonts.lora()),
+                    ),
+                  ],
+                );
+              },
+            );
+          }
+        }
+      } catch (e) {
+        print('Lỗi kiểm tra tối ưu hóa pin: $e');
+      }
+    }
+  }
+  // Sửa lại hàm _scheduleOneMinuteNotification() để khắc phục lỗi LED
+  Future<void> _scheduleOneMinuteNotification() async {
+    try {
+      final vietnamTimeZone = tz.getLocation('Asia/Ho_Chi_Minh');
+      final now = DateTime.now();
+      final scheduledTime = now.add(const Duration(minutes: 1));
+
+      // Sửa lại AndroidNotificationDetails để tránh lỗi LED
+      final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'one_minute_channel',
+        'One Minute Notifications',
+        channelDescription: 'Notifications scheduled for 1 minute',
+        importance: Importance.max,
+        priority: Priority.high,
+        showWhen: true,
+        playSound: true,
+        enableVibration: true,
+        enableLights: true,
+        // Sửa lại cấu hình LED để tránh lỗi
+        ledColor: Colors.blue,
+        ledOnMs: 1000,  // Thêm dòng này
+        ledOffMs: 500,  // Thêm dòng này
+        autoCancel: false,
+        styleInformation: const BigTextStyleInformation(
+          'Đã đúng 1 phút! Thông báo này được lập lịch từ trước.',
+        ),
+      );
+
+      final NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidDetails,
+      );
+
+      final tzScheduledTime = tz.TZDateTime.from(scheduledTime, vietnamTimeZone);
+
+      AndroidScheduleMode scheduleMode = _hasExactAlarmPermission
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle;
+
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        777, // ID duy nhất cho thông báo 1 phút
+        'Thông báo 1 phút ⏰',
+        'Đã đúng 1 phút kể từ khi bạn nhấn nút!',
+        tzScheduledTime,
+        platformChannelSpecifics,
+        androidScheduleMode: scheduleMode,
+      );
+
+      print('✅ Đã lập lịch thông báo 1 phút lúc: $tzScheduledTime');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Đã hẹn thông báo sau 1 phút! 🔔',
+              style: GoogleFonts.lora(fontSize: 14, color: Colors.white),
+            ),
+            backgroundColor: Colors.purple,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'Hủy',
+              textColor: Colors.white,
+              onPressed: () async {
+                await _flutterLocalNotificationsPlugin.cancel(777);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Đã hủy thông báo 1 phút', style: GoogleFonts.lora()),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      }
+
+    } catch (e) {
+      print('❌ Lỗi khi lập lịch thông báo 1 phút: $e');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Lỗi: Không thể lập lịch thông báo 1 phút',
+              style: GoogleFonts.lora(fontSize: 14, color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+// Update your _buildTestNotificationButton method to include the 1-minute button
   Widget _buildTestNotificationButton() {
     return Container(
       margin: const EdgeInsets.all(16),
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: _scheduleTestNotification,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      child: Column(
+        children: [
+          // Nút test ngay lập tức
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _showImmediateNotification,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 3,
+              ),
+              icon: const Icon(Icons.notifications, size: 24),
+              label: Text(
+                'Test Thông Báo Ngay',
+                style: GoogleFonts.lora(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ),
-          elevation: 3,
-        ),
-        icon: const Icon(Icons.alarm, size: 24),
-        label: Text(
-          'Test Thông Báo (1 phút)',
-          style: GoogleFonts.lora(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+          const SizedBox(height: 8),
+
+          // NÚT MỚI: Test sau 1 phút
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _scheduleOneMinuteNotification,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 3,
+              ),
+              icon: const Icon(Icons.alarm, size: 24),
+              label: Text(
+                'Thông Báo Sau 1 Phút ⏰',
+                style: GoogleFonts.lora(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ),
-        ),
+          const SizedBox(height: 8),
+
+          // Nút test sau 5 giây
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _testQuickNotification,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 3,
+              ),
+              icon: const Icon(Icons.timer, size: 24),
+              label: Text(
+                'Test Sau 5 Giây',
+                style: GoogleFonts.lora(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Các nút khác
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _requestDisableBatteryOptimization,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 3,
+                  ),
+                  icon: const Icon(Icons.battery_saver, size: 20),
+                  label: Text(
+                    'Tắt tối ưu pin',
+                    style: GoogleFonts.lora(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _checkPendingNotificationsDetailed,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 3,
+                  ),
+                  icon: const Icon(Icons.list, size: 20),
+                  label: Text(
+                    'Kiểm tra',
+                    style: GoogleFonts.lora(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

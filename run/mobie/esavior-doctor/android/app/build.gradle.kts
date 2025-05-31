@@ -7,8 +7,10 @@ plugins {
 
 android {
     namespace = "com.example.esavior_doctor"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 35 // ✅ hoặc cao hơn
+
+    ndkVersion = "27.0.12077973" // ✅ theo yêu cầu từ lỗi bạn dán
+
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -24,7 +26,8 @@ android {
     defaultConfig {
         applicationId = "com.example.esavior_doctor"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 35 // ✅ Đặt cố định là 33 hoặc cao hơn
+
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         // Bật MultiDex
