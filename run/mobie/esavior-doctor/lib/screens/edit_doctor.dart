@@ -73,7 +73,13 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
           _emailController.text = doctor['doctor_email'] ?? '';
           _summaryController.text = doctor['summary'] ?? '';
           _descriptionController.text = doctor['doctor_description'] ?? '';
-          _priceController.text = doctor['doctor_price']?.toString() ?? '';
+          var price = doctor['doctor_price'];
+          _priceController.text = (price is int)
+              ? price.toString()
+              : (price is double && price == price.toInt())
+              ? price.toInt().toString()
+              : price.toString();
+
           _statusController.text = doctor['working_status'] ?? '';
           _imageController.text = doctor['doctor_image'] ?? '';
           _errorMessage = null;

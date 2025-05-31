@@ -1064,27 +1064,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
                                         ),
                                       ),
                                       // Hiển thị thông tin thông báo (cập nhật)
-                                      Container(
-                                        margin: const EdgeInsets.only(top: 4),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.notifications,
-                                              size: 12,
-                                              color: accentColor,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'Thông báo: 15p trước',
-                                              style: GoogleFonts.lora(
-                                                fontSize: 11,
-                                                color: accentColor,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
+
                                     ],
                                   ),
                                 ),
