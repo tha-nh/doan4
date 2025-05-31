@@ -76,15 +76,14 @@ void callbackDispatcher() {
                         ? a['patient'][0]['patient_name'] ?? 'Bệnh nhân ID: ${a['patient_id']}'
                         : 'Bệnh nhân ID: ${a['patient_id'] ?? 'Không xác định'}';
 
-                    // Thay đổi: Kiểm tra thời gian để thông báo trước 50 phút (thay vì 5 phút)
-                    // Tăng khoảng thời gian kiểm tra lên 60 phút để có thời gian lập lịch
-                    if (timeUntilAppointment.inMinutes > 0 && timeUntilAppointment.inMinutes <= 60) {
-                      print('Lập lịch thông báo 50p cho: $patientName, thời gian: $appointmentTime');
+                    // Thông báo trước 15 phút
+                    if (timeUntilAppointment.inMinutes > 0 && timeUntilAppointment.inMinutes <= 20) {
+                      print('Lập lịch thông báo 15p cho: $patientName, thời gian: $appointmentTime');
 
                       final androidPlatformChannelSpecifics = AndroidNotificationDetails(
-                        'appointment_channel_50min', // Đổi tên channel
-                        'Appointment Reminders 50min', // Đổi tên channel
-                        channelDescription: 'Notifications 50 minutes before appointments', // Đổi mô tả
+                        'appointment_channel_15min',
+                        'Appointment Reminders 15min',
+                        channelDescription: 'Notifications 15 minutes before appointments',
                         importance: Importance.max,
                         priority: Priority.high,
                         showWhen: true,
@@ -96,7 +95,7 @@ void callbackDispatcher() {
                         ledOffMs: 500,
                         autoCancel: false,
                         styleInformation: BigTextStyleInformation(
-                          'Lịch hẹn với $patientName vào lúc ${'$appointmentHour:00'} chỉ còn 50 phút nữa! Hãy chuẩn bị sẵn sàng.', // Đổi nội dung
+                          'Lịch hẹn với $patientName vào lúc ${'$appointmentHour:00'} chỉ còn 15 phút nữa! Hãy chuẩn bị sẵn sàng.',
                         ),
                       );
 
@@ -106,13 +105,47 @@ void callbackDispatcher() {
 
                       await flutterLocalNotificationsPlugin.zonedSchedule(
                         i,
-                        'Lịch hẹn sắp tới - 50 phút', // Đổi tiêu đề
-                        'Lịch hẹn với $patientName vào lúc ${'$appointmentHour:00'} chỉ còn 50 phút nữa! Hãy chuẩn bị sẵn sàng.', // Đổi nội dung
-                        tz.TZDateTime.from(appointmentTime.subtract(Duration(minutes: 50)), vietnamTimeZone), // Đổi thời gian
+                        'Lịch hẹn sắp tới - 15 phút',
+                        'Lịch hẹn với $patientName vào lúc ${'$appointmentHour:00'} chỉ còn 15 phút nữa! Hãy chuẩn bị sẵn sàng.',
+                        tz.TZDateTime.from(appointmentTime.subtract(Duration(minutes: 15)), vietnamTimeZone),
                         platformChannelSpecifics,
                         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
                       );
-                      print('Thông báo 50p đã được lập lịch cho ID: $i'); // Đổi log
+                      print('Thông báo 15p đã được lập lịch cho ID: $i');
+
+                      // Thông báo 2 phút trước giờ hẹn với nội dung "Đã đến giờ khám"
+                      final nearTimeAndroidDetails = AndroidNotificationDetails(
+                        'appointment_near_time_channel',
+                        'Appointment Near Time',
+                        channelDescription: 'Notifications 2 minutes before appointment time',
+                        importance: Importance.max,
+                        priority: Priority.high,
+                        showWhen: true,
+                        playSound: true,
+                        enableVibration: true,
+                        enableLights: true,
+                        ledColor: Colors.green,
+                        ledOnMs: 1000,
+                        ledOffMs: 500,
+                        autoCancel: false,
+                        styleInformation: BigTextStyleInformation(
+                          'Đã đến giờ khám với $patientName! Lịch hẹn lúc ${'$appointmentHour:00'} đã bắt đầu.',
+                        ),
+                      );
+
+                      final nearTimePlatformSpecifics = NotificationDetails(
+                        android: nearTimeAndroidDetails,
+                      );
+
+                      await flutterLocalNotificationsPlugin.zonedSchedule(
+                        i + 10000, // Sử dụng ID khác để tránh trùng lặp
+                        'Đã đến giờ khám!',
+                        'Đã đến giờ khám với $patientName! Lịch hẹn lúc ${'$appointmentHour:00'} đã bắt đầu.',
+                        tz.TZDateTime.from(appointmentTime.subtract(Duration(minutes: 2)), vietnamTimeZone), // 2 phút trước
+                        nearTimePlatformSpecifics,
+                        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+                      );
+                      print('Thông báo "đã đến giờ khám" (2p trước) đã được lập lịch cho ID: ${i + 10000}');
                     }
                   }
                 }
@@ -293,11 +326,25 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
       showBadge: true,
     );
 
+    // Tạo kênh thông báo cho thông báo "đã đến giờ khám" (2 phút trước)
+    const AndroidNotificationChannel nearTimeChannel = AndroidNotificationChannel(
+      'appointment_near_time_channel',
+      'Thông báo đã đến giờ khám',
+      description: 'Thông báo 2 phút trước giờ khám với nội dung đã đến giờ',
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+      enableLights: true,
+      ledColor: Color.fromARGB(255, 0, 255, 0),
+      showBadge: true,
+    );
+
     final androidPlugin = _flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
     if (androidPlugin != null) {
       await androidPlugin.createNotificationChannel(highImportanceChannel);
+      await androidPlugin.createNotificationChannel(nearTimeChannel);
       final granted = await androidPlugin.requestNotificationsPermission();
       print('Quyền thông báo Android: ${granted ?? false}');
     }
@@ -314,8 +361,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
     try {
       final vietnamTimeZone = tz.getLocation('Asia/Ho_Chi_Minh');
       final currentTime = DateTime.now();
-      // Đổi thời gian thông báo từ 5 phút thành 50 phút trước giờ hẹn
-      final notificationTime = appointmentTime.subtract(const Duration(minutes: 50));
+
+      // Thông báo trước 15 phút
+      final notificationTime = appointmentTime.subtract(const Duration(minutes: 15));
 
       if (notificationTime.isBefore(currentTime)) {
         print('⚠️ Thời gian thông báo đã qua, không thể lập lịch cho: $patientName lúc $timeSlot');
@@ -363,17 +411,18 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
         return;
       }
 
+      // Thông báo trước 15 phút
       final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        'appointment_channel_50min', // Đổi tên channel
-        'Appointment Reminders 50min', // Đổi tên channel
-        channelDescription: 'Notifications 50 minutes before appointments', // Đổi mô tả
+        'appointment_channel_15min',
+        'Appointment Reminders 15min',
+        channelDescription: 'Notifications 15 minutes before appointments',
         importance: Importance.max,
         priority: Priority.high,
         showWhen: true,
         playSound: true,
         enableVibration: true,
         styleInformation: BigTextStyleInformation(
-          'Lịch hẹn với $patientName vào lúc $timeSlot chỉ còn 50 phút nữa! Hãy chuẩn bị sẵn sàng.', // Đổi nội dung
+          'Lịch hẹn với $patientName vào lúc $timeSlot chỉ còn 15 phút nữa! Hãy chuẩn bị sẵn sàng.',
         ),
         enableLights: true,
         ledColor: Colors.blue,
@@ -396,14 +445,57 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
 
       await _flutterLocalNotificationsPlugin.zonedSchedule(
         id,
-        'Lịch hẹn sắp tới - 50 phút', // Đổi tiêu đề
-        'Lịch hẹn với $patientName vào lúc $timeSlot chỉ còn 50 phút nữa! Hãy chuẩn bị sẵn sàng.', // Đổi nội dung
+        'Lịch hẹn sắp tới - 15 phút',
+        'Lịch hẹn với $patientName vào lúc $timeSlot chỉ còn 15 phút nữa! Hãy chuẩn bị sẵn sàng.',
         tzScheduledTime,
         platformChannelSpecifics,
         androidScheduleMode: scheduleMode,
       );
 
-      print('✅ Đã lập lịch thông báo 50p cho: $patientName lúc $tzScheduledTime (ID $id)'); // Đổi log
+      print('✅ Đã lập lịch thông báo 15p cho: $patientName lúc $tzScheduledTime (ID $id)');
+
+      // Thông báo 2 phút trước giờ hẹn với nội dung "Đã đến giờ khám"
+      final nearTimeNotificationTime = appointmentTime.subtract(const Duration(minutes: 2));
+
+      if (nearTimeNotificationTime.isAfter(currentTime)) {
+        final nearTimeAndroidDetails = AndroidNotificationDetails(
+          'appointment_near_time_channel',
+          'Appointment Near Time',
+          channelDescription: 'Notifications 2 minutes before appointment time',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: true,
+          playSound: true,
+          enableVibration: true,
+          enableLights: true,
+          ledColor: Colors.green,
+          ledOnMs: 1000,
+          ledOffMs: 500,
+          styleInformation: BigTextStyleInformation(
+            'Đã đến giờ khám với $patientName! Lịch hẹn lúc $timeSlot đã bắt đầu.',
+          ),
+        );
+
+        final nearTimePlatformSpecifics = NotificationDetails(
+          android: nearTimeAndroidDetails,
+        );
+
+        final tzNearTime = tz.TZDateTime.from(
+          nearTimeNotificationTime,
+          vietnamTimeZone,
+        );
+
+        await _flutterLocalNotificationsPlugin.zonedSchedule(
+          id + 10000, // Sử dụng ID khác để tránh trùng lặp
+          'Đã đến giờ khám!',
+          'Đã đến giờ khám với $patientName! Lịch hẹn lúc $timeSlot đã bắt đầu.',
+          tzNearTime,
+          nearTimePlatformSpecifics,
+          androidScheduleMode: scheduleMode,
+        );
+
+        print('✅ Đã lập lịch thông báo "đã đến giờ khám" (2p trước) cho: $patientName lúc $tzNearTime (ID ${id + 10000})');
+      }
 
     } catch (e) {
       print('❌ Lỗi khi lập lịch thông báo: $e');
@@ -513,8 +605,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
             );
             final timeUntilAppointment = appointmentTime.difference(currentTime);
 
-            // Đổi khoảng thời gian kiểm tra từ 10 phút thành 60 phút
-            if (timeUntilAppointment.inMinutes > 0 && timeUntilAppointment.inMinutes <= 60) {
+            if (timeUntilAppointment.inMinutes > 0 && timeUntilAppointment.inMinutes <= 20) {
               final patientName = a['patient'] != null && a['patient'].isNotEmpty
                   ? a['patient'][0]['patient_name'] ?? 'Bệnh nhân ID: ${a['patient_id']}'
                   : 'Bệnh nhân ID: ${a['patient_id'] ?? 'Không xác định'}';
@@ -683,44 +774,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
     );
   }
 
-  Widget _buildNotificationInfo() {
-    // Đổi thông tin hiển thị từ 5 phút thành 50 phút
-    final statusText = _hasExactAlarmPermission
-        ? 'Thông báo chính xác: 50 phút trước giờ hẹn'
-        : 'Thông báo gần đúng: ~50 phút trước giờ hẹn';
-
-    final statusColor = _hasExactAlarmPermission ? Colors.green : Colors.orange;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: statusColor.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            _hasExactAlarmPermission ? Icons.notifications_active : Icons.notifications,
-            color: statusColor,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              statusText,
-              style: GoogleFonts.lora(
-                fontSize: 12,
-                color: statusColor.withOpacity(0.8),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -744,7 +797,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
         child: Column(
           children: [
             _buildFilterButtons(),
-            _buildNotificationInfo(),
+
             Expanded(
               child: _isLoading
                   ? Center(
