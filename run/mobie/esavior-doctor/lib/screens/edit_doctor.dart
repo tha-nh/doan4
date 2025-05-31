@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -63,7 +64,11 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
         final doctor = jsonDecode(response.body);
         setState(() {
           _nameController.text = doctor['doctor_name'] ?? '';
-          _phoneController.text = doctor['doctor_phone']?.toString() ?? '';
+          // Hiển thị số điện thoại với số 0 ở đầu
+          String phoneNumber = doctor['doctor_phone']?.toString() ?? '';
+          if (phoneNumber.isNotEmpty) {
+            _phoneController.text = '0$phoneNumber';
+          }
           _addressController.text = doctor['doctor_address'] ?? '';
           _emailController.text = doctor['doctor_email'] ?? '';
           _summaryController.text = doctor['summary'] ?? '';
@@ -93,10 +98,14 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
       _errorMessage = null;
     });
 
+    // Lấy số điện thoại và bỏ số 0 ở đầu trước khi lưu
+    String phoneText = _phoneController.text.trim();
+    String phoneToSave = phoneText.startsWith('0') ? phoneText.substring(1) : phoneText;
+
     final updatedData = {
       "doctor_id": _doctorId,
       "doctor_name": _nameController.text.trim(),
-      "doctor_phone": int.tryParse(_phoneController.text.trim()),
+      "doctor_phone": int.tryParse(phoneToSave),
       "doctor_address": _addressController.text.trim(),
       "doctor_email": _emailController.text.trim(),
       "summary": _summaryController.text.trim(),
@@ -278,12 +287,19 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                             ),
                             filled: true,
                             fillColor: Colors.white,
+                            hintText: '0xxxxxxxxx',
                           ),
                           style: GoogleFonts.lora(),
                           keyboardType: TextInputType.phone,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(10),
+                            PhoneNumberFormatter(),
+                          ],
                           validator: (value) {
                             if (value!.trim().isEmpty) return 'Vui lòng nhập số điện thoại';
-                            if (int.tryParse(value.trim()) == null) return 'Số điện thoại không hợp lệ';
+                            if (value.trim().length != 10) return 'Số điện thoại phải có 10 chữ số';
+                            if (!value.startsWith('0')) return 'Số điện thoại phải bắt đầu bằng số 0';
                             return null;
                           },
                         ),
@@ -360,19 +376,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                           ),
                           style: GoogleFonts.lora(),
                         ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _imageController,
-                          decoration: InputDecoration(
-                            labelText: 'URL ảnh đại diện',
-                            labelStyle: GoogleFonts.lora(),
-                            prefixIcon: const Icon(Icons.image, color: Colors.blueAccent),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            filled: true,
-                            fillColor: Colors.white,
-                          ),
-                          style: GoogleFonts.lora(),
-                        ),
+
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _summaryController,
@@ -442,6 +446,37 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// Custom formatter để tự động thêm số 0 ở đầu
+class PhoneNumberFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
+    String newText = newValue.text;
+
+    // Nếu người dùng xóa hết thì để trống
+    if (newText.isEmpty) {
+      return newValue;
+    }
+
+    // Nếu không bắt đầu bằng 0 thì thêm 0 vào đầu
+    if (!newText.startsWith('0')) {
+      newText = '0$newText';
+    }
+
+    // Giới hạn tối đa 10 ký tự
+    if (newText.length > 10) {
+      newText = newText.substring(0, 10);
+    }
+
+    return TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
     );
   }
 }

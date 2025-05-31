@@ -28,7 +28,7 @@ dependencies:
   firebase_database: any
   shared_preferences: any
   workmanager:
-    path: C:\Boss\GitHub\sem4\doan4\flutter_workmanager-main\workmanager
+    path: C:\Boss\GitHub\doan4\flutter_workmanager-main\workmanager
   flutter_local_notifications: any
   web_socket_channel: any
 dev_dependencies:

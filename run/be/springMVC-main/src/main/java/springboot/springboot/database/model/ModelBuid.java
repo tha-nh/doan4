@@ -664,6 +664,7 @@ public class ModelBuid<T extends Entity<?>> implements ModelBuidDAO {
     }
 
 
+
     // Phương thức tìm kiếm cho Doctors
 
     public List<Doctors> searchDoctorsByKeyword(String keyword) throws SQLException, IllegalAccessException, InvocationTargetException, InstantiationException, NoSuchMethodException {

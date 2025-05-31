@@ -5,6 +5,9 @@ import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'edit_doctor.dart';
 import 'login_screen.dart';
+import 'package:image_picker/image_picker.dart';
+
+
 
 class DoctorProfileScreen extends StatefulWidget {
   const DoctorProfileScreen({super.key, required this.doctorId});
@@ -95,22 +98,73 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> with SingleTi
   }
 
   Future<void> _logout() async {
-    setState(() {
-      _isLoading = true;
-    });
-    try {
-      await _storage.delete(key: 'doctor_id');
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
+    // Show confirmation dialog
+    bool? confirmLogout = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: cardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Text(
+            'Xác nhận đăng xuất',
+            style: GoogleFonts.lora(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
+          ),
+          content: Text(
+            'Bạn có chắc chắn muốn đăng xuất?',
+            style: GoogleFonts.lora(
+              fontSize: 14,
+              color: textColor,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false), // Cancel
+              child: Text(
+                'Hủy',
+                style: GoogleFonts.lora(
+                  fontSize: 14,
+                  color: primaryColor,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true), // Confirm
+              child: Text(
+                'Đăng xuất',
+                style: GoogleFonts.lora(
+                  fontSize: 14,
+                  color: errorColor,
+                ),
+              ),
+            ),
+          ],
         );
-      }
-    } catch (e) {
-      _showSnackBar('Lỗi khi đăng xuất. Vui lòng thử lại!');
+      },
+    );
+
+    // Proceed with logout only if confirmed
+    if (confirmLogout == true) {
       setState(() {
-        _isLoading = false;
+        _isLoading = true;
       });
+      try {
+        await _storage.delete(key: 'doctor_id');
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+          );
+        }
+      } catch (e) {
+        _showSnackBar('Lỗi khi đăng xuất. Vui lòng thử lại!');
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -131,6 +185,83 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> with SingleTi
       ),
     );
   }
+
+  Future<void> _pickAndUploadImage() async {
+    final ImageSource? source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Chọn từ thư viện'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Chụp ảnh'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (source == null) return;
+
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+    if (pickedFile == null) return;
+
+    final imageBytes = await pickedFile.readAsBytes();
+    final base64Image = base64Encode(imageBytes);
+
+    const imgbbApiKey = 'fa4176aa6360d22d4809f8799fbdf498'; // Thay bằng API key của bạn
+    final uploadUrl = Uri.parse('https://api.imgbb.com/1/upload?key=$imgbbApiKey');
+
+    try {
+      final response = await http.post(uploadUrl, body: {
+        'image': base64Image,
+      });
+
+      if (response.statusCode == 200) {
+        final imageUrl = jsonDecode(response.body)['data']['url'];
+        await _updateDoctorImage(imageUrl);
+      } else {
+        _showSnackBar('Không thể tải ảnh lên.');
+      }
+    } catch (e) {
+      _showSnackBar('Lỗi kết nối khi upload ảnh');
+    }
+  }
+
+
+  Future<void> _updateDoctorImage(String imageUrl) async {
+    final updateUrl = Uri.parse('http://10.0.2.2:8081/api/v1/doctors/update');
+    final response = await http.put(
+      updateUrl,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'doctor_id': doctorId,
+        'doctor_image': imageUrl,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      _showSnackBar('Cập nhật ảnh thành công!');
+      await fetchDoctor(); // Làm mới UI
+    } else {
+      _showSnackBar('Cập nhật ảnh thất bại.');
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -179,36 +310,43 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> with SingleTi
           ),
         ],
       ),
-      child: Row(
+
+      child:Row(
         children: [
-          CircleAvatar(
-            radius: 40,
-            backgroundColor: primaryColor.withOpacity(0.2),
-            child: doctor!['doctor_image'] != null && doctor!['doctor_image'].isNotEmpty
-                ? ClipOval(
-              child: Image.network(
-                doctor!['doctor_image'],
-                width: 80,
-                height: 80,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return const CircularProgressIndicator(
-                    color: primaryColor,
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) => const Icon(
-                  Icons.person,
-                  size: 40,
-                  color: primaryColor,
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: primaryColor.withOpacity(0.2),
+                child: doctor!['doctor_image'] != null && doctor!['doctor_image'].isNotEmpty
+                    ? ClipOval(
+                  child: Image.network(
+                    doctor!['doctor_image'],
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.person, size: 40, color: primaryColor),
+                  ),
+                )
+                    : const Icon(Icons.person, size: 40, color: primaryColor),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: _pickAndUploadImage, // Gọi hàm upload
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: primaryColor,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                  ),
                 ),
               ),
-            )
-                : const Icon(
-              Icons.person,
-              size: 40,
-              color: primaryColor,
-            ),
+            ],
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -237,6 +375,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> with SingleTi
           ),
         ],
       ),
+
+
     );
   }
 
@@ -260,10 +400,11 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> with SingleTi
           _buildProfileItem('Tên đăng nhập', doctor!['doctor_username']),
           _buildProfileItem('Tên', doctor!['doctor_name']),
           _buildProfileItem('Email', doctor!['doctor_email']),
-          _buildProfileItem('Số điện thoại', doctor!['doctor_phone'].toString()),
+          _buildProfileItem('Số điện thoại', ' 0${doctor!['doctor_phone'].toString()}'),
           _buildProfileItem('Địa chỉ', doctor!['doctor_address']),
           _buildProfileItem('Khoa', 'Khoa ${doctor!['department_id']}'),
-          _buildProfileItem('Giá khám', '${doctor!['doctor_price']} VND'),
+          _buildProfileItem('Giá khám', '${(doctor!['doctor_price'] as num).toInt()} VND'),
+
           _buildProfileItem('Tóm tắt', doctor!['summary'] ?? 'Chưa có tóm tắt'),
           _buildProfileItem('Mô tả', doctor!['doctor_description'] ?? 'Chưa có mô tả'),
           _buildProfileItem('Trạng thái', doctor!['working_status'] ?? 'Không rõ'),

@@ -18,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _storage = const FlutterSecureStorage();
   String? _errorMessage;
   bool _isLoading = false;
+  bool _obscurePassword = true; // Added to track password visibility
 
   Future<void> _login() async {
     setState(() {
@@ -142,12 +143,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Password field
+                // Password field with show/hide toggle
                 TextField(
                   controller: _passwordController,
                   decoration: InputDecoration(
                     labelText: 'Mật khẩu',
                     prefixIcon: const Icon(Icons.lock, color: Colors.blueAccent),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        color: Colors.blueAccent,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword; // Toggle visibility
+                        });
+                      },
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -158,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       fontSize: 16,
                     ),
                   ),
-                  obscureText: true,
+                  obscureText: _obscurePassword, // Use the toggle state
                 ),
                 const SizedBox(height: 24),
                 // Login button

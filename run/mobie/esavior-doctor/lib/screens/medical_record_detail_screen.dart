@@ -122,7 +122,7 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
                   _buildDetailRow('Mã hồ sơ', widget.record['record_id']?.toString() ?? 'Không xác định'),
                   _buildDetailRow('Mã bệnh nhân', widget.record['patient_id']?.toString() ?? 'Không xác định'),
                   _buildDetailRow('Bác sĩ phụ trách', widget.record['doctor_id']?.toString() ?? 'Không xác định'),
-                  _buildDetailRow('Ngày khám', _formatDate(widget.record['visit_date'])),
+                  _buildDetailRow('Ngày khám', _formatDate(widget.record['follow_up_date'])),
                 ]),
                 if (imageUrl != null) ...[
                   const SizedBox(height: 20),
@@ -138,7 +138,7 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
                   _buildDetailRow('Chẩn đoán', widget.record['diagnosis'] ?? 'Chưa có'),
                   _buildDetailRow('Điều trị', widget.record['treatment'] ?? 'Chưa có'),
                   _buildDetailRow('Đơn thuốc', widget.record['prescription'] ?? 'Chưa có'),
-                  _buildDetailRow('Tái khám', _formatDate(widget.record['follow_up_date'])),
+                  // _buildDetailRow('Tái khám', _formatDate(widget.record['follow_up_date'])),
                   _buildDetailRow('Mức độ nghiêm trọng', widget.record['severity']?.toString() ?? 'Chưa có'),
                 ]),
               ],
@@ -150,6 +150,11 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
   }
 
   Widget _buildPatientHeader() {
+    // Access patient data from the nested 'patients' list
+    final patient = widget.record['patients'] != null && widget.record['patients'].isNotEmpty
+        ? widget.record['patients'][0]
+        : null;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -167,7 +172,7 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            widget.record['patient_name']?.toString() ?? 'Bệnh nhân không xác định',
+            patient != null ? patient['patient_name']?.toString() ?? 'Bệnh nhân không xác định' : 'Bệnh nhân không xác định',
             style: GoogleFonts.lora(
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -176,7 +181,7 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
           ),
           const SizedBox(height: 8),
           Text(
-            'Ngày sinh: ${_formatDate(widget.record['date_of_birth'])}',
+            'Ngày sinh: ${_formatDate(patient != null ? patient['date_of_birth'] : null)}',
             style: GoogleFonts.lora(
               fontSize: 16,
               color: Colors.black54,
@@ -184,7 +189,7 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
           ),
           const SizedBox(height: 4),
           Text(
-            'Giới tính: ${widget.record['gender'] ?? 'Chưa xác định'}',
+            'Giới tính: ${patient != null ? patient['gender'] ?? 'Chưa xác định' : 'Chưa xác định'}',
             style: GoogleFonts.lora(
               fontSize: 16,
               color: Colors.black54,

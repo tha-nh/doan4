@@ -21,6 +21,14 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
 
+  String getTimeSlot(dynamic slot) {
+    const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
+    if (slot is int && slot >= 1 && slot <= 8) {
+      return '${timeSlots[slot - 1]}:00';
+    }
+    return 'Chưa xác định';
+  }
+
   // Color palette
   static const Color primaryColor = Color(0xFF0288D1);
   static const Color accentColor = Color(0xFFFFB300);
@@ -63,10 +71,48 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
-        setState(() {
-          _appointmentDetails = jsonDecode(response.body);
-          _isLoading = false;
-        });
+        final appointmentData = jsonDecode(response.body);
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final medicalDayStr = appointmentData['medical_day']?.toString();
+        bool isValid = true;
+
+        // Check if medical_day is today or in the future
+        if (medicalDayStr != null) {
+          try {
+            final medicalDay = DateTime.parse(medicalDayStr);
+            if (medicalDay.isBefore(today)) {
+              isValid = false; // Appointment is before today
+            } else if (medicalDay.isAtSameMomentAs(today)) {
+              // If medical_day is today, check if the time slot is in the future
+              final slot = appointmentData['slot'];
+              final currentHour = now.hour;
+              const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
+              if (slot is int && slot >= 1 && slot <= 8) {
+                final appointmentHour = timeSlots[slot - 1];
+                if (appointmentHour <= currentHour) {
+                  isValid = false; // Time slot has passed
+                }
+              }
+            }
+          } catch (e) {
+            isValid = false; // Invalid date format
+          }
+        } else {
+          isValid = false; // No medical_day
+        }
+
+        if (isValid) {
+          setState(() {
+            _appointmentDetails = appointmentData;
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _errorMessage = 'Lịch hẹn đã qua thời gian hợp lệ.';
+            _isLoading = false;
+          });
+        }
       } else {
         setState(() {
           _errorMessage = 'Lỗi khi tải chi tiết lịch hẹn: ${response.statusCode}';
@@ -241,13 +287,13 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
                   _buildDetailRow('Mã lịch hẹn', appointment['appointment_id']?.toString() ?? 'Không xác định'),
                   _buildDetailRow('Ngày đặt', _formatDate(appointment['appointment_date']?.toString())),
                   _buildDetailRow('Ngày khám', _formatDate(appointment['medical_day']?.toString())),
-                  _buildDetailRow('Khung giờ', appointment['slot']?.toString() ?? 'Chưa có'),
+                  _buildDetailRow('Khung giờ', getTimeSlot(appointment['slot'])),
                   _buildDetailRow('Trạng thái', status),
                   _buildDetailRow('Thanh toán', appointment['payment_name']?.toString() ?? 'Chưa có'),
-                  _buildDetailRow('Giá', '${appointment['price']?.toString() ?? '0'} VND'),
+                  _buildDetailRow('Nhân viên phụ trách', appointment['staff_id']?.toString() ?? 'Chưa có'),
+                  _buildDetailRow('Giá', '${appointment['price']?.toInt().toString() ?? '0'} VND'),
                 ]),
                 if (status == 'PENDING') ...[
-
                   const SizedBox(height: 12),
                   _buildActionButtons(),
                 ],

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
-import 'medical_record_detail_screen.dart'; // Import the detail screen
+import 'medical_record_detail_screen.dart';
 
 class MedicalRecordsScreen extends StatefulWidget {
   const MedicalRecordsScreen({super.key, required this.doctorId});
@@ -20,10 +20,11 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
-  // Color palette matching MedicalRecordDetailScreen
+  DateTime? startDate;
+  DateTime? endDate;
+
   static const Color primaryColor = Color(0xFF0288D1);
   static const Color accentColor = Color(0xFFFFB300);
-  static const Color backgroundColor = Color(0xFFF5F7FA);
   static const Color cardColor = Colors.white;
   static const Color errorColor = Color(0xFFE57373);
 
@@ -53,12 +54,26 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
   }
 
   Future<void> fetchRecords() async {
-    final url = Uri.parse('http://10.0.2.2:8081/api/v1/doctors/$doctorId/medicalrecords');
+    final url = Uri.parse('http://10.0.2.2:8081/api/v1/medicalrecords/doctor/$doctorId');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
+        final List<dynamic> fetchedRecords = jsonDecode(response.body);
+        final DateTime now = DateTime.now();
+        final DateTime effectiveStartDate = startDate ?? now.subtract(const Duration(days: 15));
+        final DateTime effectiveEndDate = endDate ?? now;
+
         setState(() {
-          records = jsonDecode(response.body);
+          records = fetchedRecords.where((r) {
+            final recordDate = DateTime.tryParse(r['follow_up_date'] ?? '') ?? DateTime(1970, 1, 1);
+            return (recordDate.isAtSameMomentAs(effectiveStartDate) || recordDate.isAfter(effectiveStartDate)) &&
+                (recordDate.isAtSameMomentAs(effectiveEndDate) || recordDate.isBefore(effectiveEndDate));
+          }).toList()
+            ..sort((a, b) {
+              final dateA = DateTime.tryParse(a['follow_up_date'] ?? '') ?? DateTime(1970, 1, 1);
+              final dateB = DateTime.tryParse(b['follow_up_date'] ?? '') ?? DateTime(1970, 1, 1);
+              return dateB.compareTo(dateA);
+            });
           _errorMessage = null;
         });
       } else {
@@ -76,8 +91,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // Nền trắng
-
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: _isLoading
             ? Center(
@@ -126,33 +140,92 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
             ],
           ),
         )
-            : records.isEmpty
-            ? Center(
-          child: Text(
-            'Không có hồ sơ bệnh án nào',
-            style: GoogleFonts.lora(
-              fontSize: 18,
-              color: Colors.black54,
-              fontWeight: FontWeight.w500,
+            : Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: startDate ?? DateTime.now().subtract(const Duration(days: 15)),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime.now(),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            startDate = picked;
+                          });
+                          await fetchRecords();
+                        }
+                      },
+                      child: Text(
+                        startDate == null
+                            ? 'Từ ngày'
+                            : 'Từ: ${startDate!.toLocal().toIso8601String().substring(0, 10)}',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: endDate ?? DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime.now(),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            endDate = picked;
+                          });
+                          await fetchRecords();
+                        }
+                      },
+                      child: Text(
+                        endDate == null
+                            ? 'Đến ngày'
+                            : 'Đến: ${endDate!.toLocal().toIso8601String().substring(0, 10)}',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        )
-            : RefreshIndicator(
-          onRefresh: fetchRecords,
-          color: accentColor,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16.0),
-            itemCount: records.length,
-            itemBuilder: (context, index) {
-              final r = records[index];
-              return _buildRecordCard(r);
-            },
-          ),
+            Expanded(
+              child: records.isEmpty
+                  ? Center(
+                child: Text(
+                  'Không có hồ sơ bệnh án nào',
+                  style: GoogleFonts.lora(
+                    fontSize: 18,
+                    color: Colors.black54,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              )
+                  : RefreshIndicator(
+                onRefresh: fetchRecords,
+                color: accentColor,
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: records.length,
+                  itemBuilder: (context, index) {
+                    final r = records[index];
+                    return _buildRecordCard(r);
+                  },
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
-
 
   Widget _buildRecordCard(dynamic record) {
     return AnimatedContainer(
@@ -233,7 +306,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
                           fontSize: 15,
                           color: Colors.black87,
                           height: 1.5,
-                          fontWeight: FontWeight.w600, // Emphasize severity
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
