@@ -747,7 +747,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
           const SizedBox(width: 8),
           Expanded(
             child: _buildFilterButton(
-              'Tháng này',
+              'Theo tháng',
               FilterType.thisMonth,
               Icons.calendar_month,
             ),
@@ -755,7 +755,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
           const SizedBox(width: 8),
           Expanded(
             child: _buildFilterButton(
-              'Năm này',
+              'Theo năm',
               FilterType.thisYear,
               Icons.calendar_today,
             ),

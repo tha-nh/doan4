@@ -357,6 +357,9 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                           ),
                           style: GoogleFonts.lora(),
                           keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly, // chỉ cho phép số nguyên
+                          ],
                           validator: (value) {
                             if (value!.trim().isEmpty) return 'Vui lòng nhập giá khám';
                             if (double.tryParse(value.trim()) == null) return 'Giá không hợp lệ';
