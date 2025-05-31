@@ -26,20 +26,7 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <receiver
-                    android:exported="false"
-                    android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
-                    tools:ignore="MissingClass,WrongManifestParent"/>
 
-            <receiver
-                    android:exported="false"
-                    android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
-                    tools:ignore="MissingClass,WrongManifestParent">
-                <intent-filter>
-                    <action android:name="android.intent.action.BOOT_COMPLETED"/>
-                    <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
-                </intent-filter>
-            </receiver>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
