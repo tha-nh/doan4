@@ -4,7 +4,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
 import 'package:device_info_plus/device_info_plus.dart';
-import '../service/appointment_service.dart';
+import '../service/optimized_appointment_service.dart';
+import '../service/scheduled_notifications_viewer.dart';
 
 
 class SettingsScreen extends StatefulWidget {
@@ -31,9 +32,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   static const Color backgroundColor = Color(0xFFF5F7FA);
   static const Color cardColor = Colors.white;
 
-  final _appointmentService = AppointmentService();
+  final _appointmentService = OptimizedAppointmentService();
   int? _doctorId;
 
+  // Track if there are unsaved changes
+  bool _originalNotificationsEnabled = true;
+  int _originalReminderMinutes = 15;
+  bool _originalExactTimeNotification = true;
+
+  bool get _hasUnsavedChanges {
+    return _notificationsEnabled != _originalNotificationsEnabled ||
+        _reminderMinutes != _originalReminderMinutes ||
+        _exactTimeNotification != _originalExactTimeNotification;
+  }
 
   @override
   void initState() {
@@ -49,10 +60,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final reminderMinutes = await _storage.read(key: 'reminder_minutes');
       final exactTimeNotification = await _storage.read(key: 'exact_time_notification');
 
+      final notifications = notificationsEnabled != 'false';
+      final reminder = int.tryParse(reminderMinutes ?? '15') ?? 15;
+      final exactTime = exactTimeNotification != 'false';
+
       setState(() {
-        _notificationsEnabled = notificationsEnabled != 'false';
-        _reminderMinutes = int.tryParse(reminderMinutes ?? '15') ?? 15;
-        _exactTimeNotification = exactTimeNotification != 'false';
+        // Set both original and current values
+        _originalNotificationsEnabled = notifications;
+        _originalReminderMinutes = reminder;
+        _originalExactTimeNotification = exactTime;
+
+        _notificationsEnabled = notifications;
+        _reminderMinutes = reminder;
+        _exactTimeNotification = exactTime;
       });
     } catch (e) {
       print('Lỗi khi tải cài đặt: $e');
@@ -76,6 +96,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await _storage.write(key: 'reminder_minutes', value: _reminderMinutes.toString());
       await _storage.write(key: 'exact_time_notification', value: _exactTimeNotification.toString());
 
+      // Update original values to match current values
+      setState(() {
+        _originalNotificationsEnabled = _notificationsEnabled;
+        _originalReminderMinutes = _reminderMinutes;
+        _originalExactTimeNotification = _exactTimeNotification;
+      });
+
       // Reload settings in AppointmentService
       await _appointmentService.loadNotificationSettings();
 
@@ -98,26 +125,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _onSettingChanged() async {
-    // Auto-save when settings change (optional - for immediate effect)
-    if (_doctorId != null) {
-      try {
-        await _storage.write(key: 'notifications_enabled', value: _notificationsEnabled.toString());
-        await _storage.write(key: 'reminder_minutes', value: _reminderMinutes.toString());
-        await _storage.write(key: 'exact_time_notification', value: _exactTimeNotification.toString());
-
-        await _appointmentService.loadNotificationSettings();
-
-        // Only reschedule if notifications are enabled
-        if (_notificationsEnabled) {
-          await _appointmentService.refreshAppointments(_doctorId!);
-        } else {
-          await _appointmentService.cancelAllNotifications();
-        }
-      } catch (e) {
-        print('Lỗi khi cập nhật setting: $e');
-      }
-    }
+  void _resetSettings() {
+    setState(() {
+      _notificationsEnabled = _originalNotificationsEnabled;
+      _reminderMinutes = _originalReminderMinutes;
+      _exactTimeNotification = _originalExactTimeNotification;
+    });
   }
 
   Future<void> _checkPermissions() async {
@@ -216,6 +229,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _viewScheduledNotifications() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ScheduledNotificationsViewer(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -232,30 +254,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
-        // Bỏ actions ở AppBar
+        actions: [
+          // Nút xem thông báo đã lập lịch
+          IconButton(
+            onPressed: _viewScheduledNotifications,
+            icon: const Icon(Icons.schedule),
+            tooltip: 'Xem thông báo đã lập lịch',
+          ),
+        ],
       ),
-      // Thêm FloatingActionButton
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _saveSettings,
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.save),
-        label: Text(
-          'Lưu cài đặt',
-          style: GoogleFonts.lora(fontWeight: FontWeight.w600),
-        ),
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          // Reset button (only show if there are unsaved changes)
+          if (_hasUnsavedChanges) ...[
+            FloatingActionButton.extended(
+              onPressed: _resetSettings,
+              backgroundColor: Colors.grey[600],
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.refresh),
+              label: Text(
+                'Đặt lại',
+                style: GoogleFonts.lora(fontWeight: FontWeight.w600),
+              ),
+              heroTag: "reset",
+            ),
+            const SizedBox(width: 16),
+          ],
+          // Save button
+          FloatingActionButton.extended(
+            onPressed: _hasUnsavedChanges ? _saveSettings : null,
+            backgroundColor: _hasUnsavedChanges ? primaryColor : Colors.grey[400],
+            foregroundColor: Colors.white,
+            icon: const Icon(Icons.save),
+            label: Text(
+              'Lưu cài đặt',
+              style: GoogleFonts.lora(fontWeight: FontWeight.w600),
+            ),
+            heroTag: "save",
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Show unsaved changes indicator
+            if (_hasUnsavedChanges)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.orange[100],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning, color: Colors.orange[700], size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Bạn có thay đổi chưa được lưu. Nhấn "Lưu cài đặt" để áp dụng.',
+                        style: GoogleFonts.lora(
+                          fontSize: 14,
+                          color: Colors.orange[700],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             _buildNotificationSection(),
             const SizedBox(height: 24),
             _buildPermissionSection(),
             const SizedBox(height: 24),
+            _buildNotificationManagementSection(),
+            const SizedBox(height: 24),
             _buildAboutSection(),
-            const SizedBox(height: 80), // Thêm khoảng trống cho FAB
+            const SizedBox(height: 80),
           ],
         ),
       ),
@@ -288,7 +368,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Bật/tắt thông báo
             SwitchListTile(
               title: Text(
                 'Bật thông báo lịch khám',
@@ -303,7 +382,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 setState(() {
                   _notificationsEnabled = value;
                 });
-                _onSettingChanged(); // Add this line
               },
               activeColor: primaryColor,
             ),
@@ -311,7 +389,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             if (_notificationsEnabled) ...[
               const Divider(),
 
-              // Chọn thời gian nhắc nhở
               ListTile(
                 title: Text(
                   'Thời gian nhắc nhở',
@@ -337,13 +414,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       setState(() {
                         _reminderMinutes = value;
                       });
-                      _onSettingChanged(); // Add this line
                     }
                   },
                 ),
               ),
 
-              // Thông báo khi đến giờ
               SwitchListTile(
                 title: Text(
                   'Thông báo khi đến giờ khám',
@@ -358,7 +433,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   setState(() {
                     _exactTimeNotification = value;
                   });
-                  _onSettingChanged(); // Add this line
                 },
                 activeColor: primaryColor,
               ),
@@ -395,7 +469,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Trạng thái quyền thông báo chính xác
             ListTile(
               leading: Icon(
                 _hasExactAlarmPermission ? Icons.check_circle : Icons.warning,
@@ -424,6 +497,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 child: Text('Cấp quyền', style: GoogleFonts.lora()),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationManagementSection() {
+    return Card(
+      color: cardColor,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.manage_history, color: primaryColor, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  'Quản Lý Thông Báo',
+                  style: GoogleFonts.lora(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: primaryColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.schedule, color: primaryColor),
+              ),
+              title: Text(
+                'Xem thông báo đã lập lịch',
+                style: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+              subtitle: Text(
+                'Xem danh sách các thông báo đang chờ được gửi',
+                style: GoogleFonts.lora(fontSize: 14, color: Colors.grey[600]),
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: _viewScheduledNotifications,
             ),
           ],
         ),

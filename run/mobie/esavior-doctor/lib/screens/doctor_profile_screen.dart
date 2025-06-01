@@ -528,6 +528,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
 
   Widget _buildSliverAppBar() {
     return SliverAppBar(
+      automaticallyImplyLeading: false,
       expandedHeight: 320,
       floating: false,
       pinned: true,

@@ -3,11 +3,14 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import 'package:timezone/timezone.dart' as tz;
-import '../service/appointment_service.dart';
-import 'appointment_details_screen.dart';
 
+import '../service/optimized_appointment_service.dart';
+import '../service/scheduled_notifications_viewer.dart';
+ // Updated import
+import '../screens/settings_screen.dart'; // Add settings import
+// Add notification viewer import
+import 'appointment_details_screen.dart';
 import 'dart:math' as math;
 
 // Enum để định nghĩa các loại filter
@@ -23,13 +26,14 @@ class AppointmentsScreen extends StatefulWidget {
 
 class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProviderStateMixin {
   final _storage = const FlutterSecureStorage();
-  final _appointmentService = AppointmentService();
+  final _appointmentService = OptimizedAppointmentService(); // Updated service
 
   List<dynamic> appointments = [];
   int? _doctorId;
   bool _isLoading = true;
   String? _errorMessage;
   bool _isLocaleInitialized = false;
+  bool _isRefreshing = false; // Add refresh state
 
   late AnimationController _mainAnimationController;
   late AnimationController _fabAnimationController;
@@ -100,7 +104,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
 
   Future<void> _initializeApp() async {
     await _initializeDateFormatting();
-    await _appointmentService.initializeService();
+    // Service is already initialized in main.dart
     await _loadDoctorIdAndFetch();
   }
 
@@ -178,6 +182,48 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
         _isLoading = false;
       });
     }
+  }
+
+  // Add refresh method with notification scheduling
+  Future<void> _refreshAppointments() async {
+    if (_isRefreshing) return;
+
+    setState(() {
+      _isRefreshing = true;
+    });
+
+    try {
+      // Load notification settings first
+      await _appointmentService.loadNotificationSettings();
+
+      // Refresh appointments and reschedule notifications
+      await _appointmentService.refreshAppointments(_doctorId!);
+
+      // Fetch updated appointments
+      await fetchAppointments();
+
+
+    } catch (e) {
+      _showSnackBar('Lỗi khi cập nhật: $e', errorColor);
+    } finally {
+      setState(() {
+        _isRefreshing = false;
+      });
+    }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.lora(color: Colors.white),
+        ),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   String _formatDateVerbose(String? date) {
@@ -339,23 +385,58 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                           ],
                         ),
                       ),
-                      if (!_appointmentService.notificationsEnabled)
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
+                      // Add notification and settings buttons
+                      Row(
+                        children: [
+                          // Notification status indicator
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: _appointmentService.notificationsEnabled
+                                  ? Colors.green.withOpacity(0.2)
+                                  : Colors.red.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              _appointmentService.notificationsEnabled
+                                  ? Icons.notifications_active
+                                  : Icons.notifications_off,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.notifications_off,
-                            color: Colors.white,
-                            size: 20,
+                          const SizedBox(width: 8),
+                          // Settings button
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const SettingsScreen(),
+                                ),
+                              ).then((_) {
+                                // Refresh when returning from settings
+                                _refreshAppointments();
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.settings,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  _buildStatsRow(),
+
                 ],
               ),
             ),
@@ -365,84 +446,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
     );
   }
 
-  Widget _buildStatsRow() {
-    final todayAppointments = _getFilteredAppointments().where((appointment) {
-      final Map<String, dynamic> a = Map<String, dynamic>.from(appointment);
-      final medicalDay = a['medical_day'];
-      if (medicalDay == null) return false;
-      try {
-        final parsedDate = DateTime.parse(medicalDay.toString());
-        final today = DateTime.now();
-        return parsedDate.day == today.day &&
-            parsedDate.month == today.month &&
-            parsedDate.year == today.year;
-      } catch (e) {
-        return false;
-      }
-    }).length;
-
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.today,
-            label: 'Hôm nay',
-            value: todayAppointments.toString(),
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.notifications_active,
-            label: 'Thông báo',
-            value: _appointmentService.notificationsEnabled ? 'BẬT' : 'TẮT',
-            color: _appointmentService.notificationsEnabled ? successColor : errorColor,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(7),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: GoogleFonts.lora(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          Text(
-            label,
-            style: GoogleFonts.lora(
-              fontSize: 9,
-              color: Colors.white.withOpacity(0.8),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildFilterButtons() {
     return AnimatedBuilder(
@@ -807,15 +810,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Hãy kiểm tra lại sau hoặc thử bộ lọc khác',
-            style: GoogleFonts.lora(
-              fontSize: 14,
-              color: textSecondaryColor,
-            ),
-            textAlign: TextAlign.center,
-          ),
+
         ],
       ),
     );
@@ -906,7 +901,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
       body: Column(
         children: [
           SizedBox(
-            height: 170,
+            height: 80,
             child: _buildHeader(),
           ),
           SizedBox(
@@ -940,10 +935,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                   : filteredAppointments.isEmpty
                   ? _buildEmptyState()
                   : RefreshIndicator(
-                onRefresh: () async {
-                  await _appointmentService.loadNotificationSettings();
-                  await fetchAppointments();
-                },
+                onRefresh: _refreshAppointments, // Updated refresh method
                 color: primaryColor,
                 child: ListView.builder(
                   padding: const EdgeInsets.all(16),
@@ -959,6 +951,28 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
             ),
           ),
         ],
+      ),
+      // Add floating action button for quick access to notifications
+      floatingActionButton: AnimatedBuilder(
+        animation: _fabAnimationController,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _fabAnimationController.value,
+            child: FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ScheduledNotificationsViewer(),
+                  ),
+                );
+              },
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+              child: const Icon(Icons.schedule),
+            ),
+          );
+        },
       ),
     );
   }
