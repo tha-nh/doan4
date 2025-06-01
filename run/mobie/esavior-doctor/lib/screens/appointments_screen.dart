@@ -928,7 +928,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
             ),
           ),
         ),
+
       ),
+
     );
   }
 
@@ -978,7 +980,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(8), // Reduced from 12 to 8
+      padding: const EdgeInsets.all(7), // Reduced from 12 to 8
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(10), // Reduced from 12 to 10

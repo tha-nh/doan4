@@ -23,7 +23,6 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
   String? _errorMessage;
   String _searchQuery = '';
 
-
   DateTime? startDate;
   DateTime? endDate;
 
@@ -33,15 +32,12 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
 
   // Color palette
   static const Color primaryColor = Color(0xFF0288D1);
-
   static const Color backgroundColor = Color(0xFFF5F7FA);
   static const Color cardColor = Colors.white;
   static const Color errorColor = Color(0xFFE57373);
   static const Color successColor = Color(0xFF4CAF50);
   static const Color warningColor = Color(0xFFFF9800);
   static const Color textColor = Color(0xFF1A1A1A);
-
-
 
   @override
   void initState() {
@@ -146,13 +142,12 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
 
   List _getFilteredRecords() {
     return records.where((record) {
-      // Filter by search query
       final matchesSearch = _searchQuery.isEmpty ||
           (record['patient_id']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
           (record['symptoms']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
           (record['diagnosis']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
 
-      return matchesSearch ;
+      return matchesSearch;
     }).toList();
   }
 
@@ -226,20 +221,27 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
             ? _buildLoadingState()
             : _errorMessage != null
             ? _buildErrorState()
-            : FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: Column(
-              children: [
-                _buildHeader(),
-                _buildFilters(),
-                _buildSearchBar(),
-
-                Expanded(child: _buildRecordsList()),
-              ],
+            : Column(
+          children: [
+            // Thanh tìm kiếm độc lập
+            _buildSearchBar(),
+            // Nhóm header, filters và records list trong ListView để cuộn cùng nhau
+            Expanded(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: ListView(
+                    children: [
+                      _buildHeader(),
+                      _buildFilters(),
+                      _buildRecordsList(),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -398,8 +400,8 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
 
   Widget _buildFilters() {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(16),
@@ -414,21 +416,6 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.filter_list, color: primaryColor, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Bộ lọc',
-                style: GoogleFonts.lora(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -448,7 +435,6 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
               ),
             ],
           ),
-
         ],
       ),
     );
@@ -479,7 +465,6 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
       ),
     );
   }
-
 
   Widget _buildSearchBar() {
     return Container(
@@ -543,6 +528,8 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
       color: primaryColor,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16),
+        physics: const NeverScrollableScrollPhysics(), // Vô hiệu hóa cuộn riêng của ListView.builder
+        shrinkWrap: true, // Đảm bảo ListView chiếm đúng không gian cần thiết
         itemCount: filteredRecords.length,
         itemBuilder: (context, index) {
           final record = filteredRecords[index];
@@ -619,121 +606,121 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: cardColor,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-              border: Border.all(color: Colors.grey[100]!),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.person,
-                        color: primaryColor,
-                        size: 20,
-                      ),
+                color: cardColor,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(color: Colors.grey[100]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Bệnh nhân #${record['patient_id'] ?? 'N/A'}',
-                            style: GoogleFonts.lora(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: textColor,
-                            ),
+                    child: Icon(
+                      Icons.person,
+                      color: primaryColor,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Bệnh nhân #${record['patient_id'] ?? 'N/A'}',
+                          style: GoogleFonts.lora(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: textColor,
                           ),
-                          if (record['follow_up_date'] != null)
-                            Text(
-                              DateFormat('dd/MM/yyyy').format(
-                                DateTime.parse(record['follow_up_date']),
-                              ),
-                              style: GoogleFonts.lora(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: severityColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(severityIcon, color: severityColor, size: 14),
-                          const SizedBox(width: 4),
+                        ),
+                        if (record['follow_up_date'] != null)
                           Text(
-                            severity.isNotEmpty ? severity : 'N/A',
+                            DateFormat('dd/MM/yyyy').format(
+                              DateTime.parse(record['follow_up_date']),
+                            ),
                             style: GoogleFonts.lora(
                               fontSize: 12,
-                              color: severityColor,
-                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[600],
                             ),
                           ),
-                        ],
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildRecordDetail(
-                  icon: Icons.sick,
-                  label: 'Triệu chứng',
-                  value: record['symptoms'] ?? 'Chưa có thông tin',
-                ),
-                const SizedBox(height: 8),
-                _buildRecordDetail(
-                  icon: Icons.medical_services,
-                  label: 'Chẩn đoán',
-                  value: record['diagnosis'] ?? 'Chưa có thông tin',
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Xem chi tiết',
-                      style: GoogleFonts.lora(
-                        fontSize: 14,
-                        color: primaryColor,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: severityColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward_ios,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(severityIcon, color: severityColor, size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          severity.isNotEmpty ? severity : 'N/A',
+                          style: GoogleFonts.lora(
+                            fontSize: 12,
+                            color: severityColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildRecordDetail(
+                icon: Icons.sick,
+                label: 'Triệu chứng',
+                value: record['symptoms'] ?? 'Chưa có thông tin',
+              ),
+              const SizedBox(height: 8),
+              _buildRecordDetail(
+                icon: Icons.medical_services,
+                label: 'Chẩn đoán',
+                value: record['diagnosis'] ?? 'Chưa có thông tin',
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    'Xem chi tiết',
+                    style: GoogleFonts.lora(
+                      fontSize: 14,
                       color: primaryColor,
-                      size: 14,
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    color: primaryColor,
+                    size: 14,
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
+    ),
     );
   }
 
