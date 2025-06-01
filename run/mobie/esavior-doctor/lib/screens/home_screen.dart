@@ -6,6 +6,7 @@ import 'appointments_screen.dart';
 import 'medical_records_screen.dart';
 import 'doctor_profile_screen.dart';
 
+
 // Shared color palette
 const Color primaryColor = Color(0xFF1976D2); // Vibrant blue
 const Color backgroundColor = Colors.white;
@@ -24,11 +25,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final _storage = const FlutterSecureStorage();
   int? doctorId;
   int _selectedIndex = 1;
-  final List<String> _titles = [
-    'Hồ Sơ Y Tế',
-    'Lịch Khám',
-    'Hồ Sơ Bác Sĩ',
-  ];
 
   @override
   void initState() {
@@ -83,7 +79,6 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (_selectedIndex) {
       case 0:
         return MedicalRecordsScreen(doctorId: doctorId!);
-
       case 1:
         return AppointmentsScreen(doctorId: doctorId!);
       case 2:
@@ -97,60 +92,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
-      body: Container(
-        color: primaryColor,
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildAppBar(),
-              Expanded(
-                child: Container(
-                  color: backgroundColor,
-                  child: _buildBody(),
-                ),
-              ),
-            ],
-          ),
-        ),
+      body: SafeArea(
+        child: _buildBody(),
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: primaryColor,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            _titles[_selectedIndex],
-            style: GoogleFonts.lora(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications, color: Colors.white, size: 24),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Chưa có thông báo mới',
-                    style: GoogleFonts.lora(color: Colors.white, fontSize: 14),
-                  ),
-                  backgroundColor: primaryColor,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              );
-            },
-            tooltip: 'Thông báo',
-          ),
-        ],
-      ),
     );
   }
 
@@ -187,7 +132,6 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Lịch Khám',
             activeIcon: Icon(Icons.event, color: primaryColor, size: 24),
           ),
-
           BottomNavigationBarItem(
             icon: Icon(Icons.person, size: 24),
             label: 'Hồ Sơ',

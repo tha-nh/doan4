@@ -37,7 +37,7 @@ void main() async {
     // Initialize Workmanager
     await Workmanager().initialize(
       callbackDispatcher,
-      isInDebugMode: true, // Set to false in production
+      isInDebugMode: false, // Set to false in production
     );
     print('✅ Workmanager initialized');
 

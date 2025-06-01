@@ -181,7 +181,7 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
           ),
           const SizedBox(height: 8),
           Text(
-            'Ngày sinh: ${_formatDate(patient != null ? patient['date_of_birth'] : null)}',
+            'Ngày sinh: ${_formatDate(patient != null ? patient['patient_dob'] : null)}',
             style: GoogleFonts.lora(
               fontSize: 16,
               color: Colors.black54,
@@ -189,7 +189,7 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
           ),
           const SizedBox(height: 4),
           Text(
-            'Giới tính: ${patient != null ? patient['gender'] ?? 'Chưa xác định' : 'Chưa xác định'}',
+            'Giới tính: ${patient != null ? patient['patient_gender'] ?? 'Chưa xác định' : 'Chưa xác định'}',
             style: GoogleFonts.lora(
               fontSize: 16,
               color: Colors.black54,
