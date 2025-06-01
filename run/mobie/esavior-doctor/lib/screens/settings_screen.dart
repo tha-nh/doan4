@@ -4,6 +4,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
 import 'package:device_info_plus/device_info_plus.dart';
+import '../service/appointment_service.dart';
+
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -14,26 +16,30 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _storage = const FlutterSecureStorage();
-  
+
   // Cài đặt thông báo
   bool _notificationsEnabled = true;
   int _reminderMinutes = 15; // Mặc định 15 phút trước
   bool _exactTimeNotification = true; // Thông báo khi đến giờ (2 phút trước)
   bool _hasExactAlarmPermission = false;
-  
+
   // Danh sách các tùy chọn thời gian nhắc nhở
   final List<int> _reminderOptions = [5, 10, 15, 30, 60]; // phút
-  
+
   // Color palette
   static const Color primaryColor = Color(0xFF1976D2);
   static const Color backgroundColor = Color(0xFFF5F7FA);
   static const Color cardColor = Colors.white;
+
+  final _appointmentService = AppointmentService();
+  int? _doctorId;
 
 
   @override
   void initState() {
     super.initState();
     _loadSettings();
+    _loadDoctorId();
     _checkPermissions();
   }
 
@@ -42,7 +48,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final notificationsEnabled = await _storage.read(key: 'notifications_enabled');
       final reminderMinutes = await _storage.read(key: 'reminder_minutes');
       final exactTimeNotification = await _storage.read(key: 'exact_time_notification');
-      
+
       setState(() {
         _notificationsEnabled = notificationsEnabled != 'false';
         _reminderMinutes = int.tryParse(reminderMinutes ?? '15') ?? 15;
@@ -53,15 +59,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _loadDoctorId() async {
+    try {
+      final idString = await _storage.read(key: 'doctor_id');
+      if (idString != null) {
+        _doctorId = int.tryParse(idString);
+      }
+    } catch (e) {
+      print('Lỗi khi tải doctor ID: $e');
+    }
+  }
+
   Future<void> _saveSettings() async {
     try {
       await _storage.write(key: 'notifications_enabled', value: _notificationsEnabled.toString());
       await _storage.write(key: 'reminder_minutes', value: _reminderMinutes.toString());
       await _storage.write(key: 'exact_time_notification', value: _exactTimeNotification.toString());
-      
-      _showSnackBar('Đã lưu cài đặt thành công', Colors.green);
+
+      // Reload settings in AppointmentService
+      await _appointmentService.loadNotificationSettings();
+
+      // Reschedule notifications with new settings if doctor ID is available
+      if (_doctorId != null) {
+        _showSnackBar('Đang cập nhật lịch thông báo...', Colors.blue);
+
+        try {
+          await _appointmentService.refreshAppointments(_doctorId!);
+          _showSnackBar('Đã lưu cài đặt và cập nhật thông báo thành công', Colors.green);
+        } catch (e) {
+          print('Lỗi khi cập nhật thông báo: $e');
+          _showSnackBar('Đã lưu cài đặt nhưng có lỗi khi cập nhật thông báo', Colors.orange);
+        }
+      } else {
+        _showSnackBar('Đã lưu cài đặt thành công', Colors.green);
+      }
     } catch (e) {
       _showSnackBar('Lỗi khi lưu cài đặt: $e', Colors.red);
+    }
+  }
+
+  Future<void> _onSettingChanged() async {
+    // Auto-save when settings change (optional - for immediate effect)
+    if (_doctorId != null) {
+      try {
+        await _storage.write(key: 'notifications_enabled', value: _notificationsEnabled.toString());
+        await _storage.write(key: 'reminder_minutes', value: _reminderMinutes.toString());
+        await _storage.write(key: 'exact_time_notification', value: _exactTimeNotification.toString());
+
+        await _appointmentService.loadNotificationSettings();
+
+        // Only reschedule if notifications are enabled
+        if (_notificationsEnabled) {
+          await _appointmentService.refreshAppointments(_doctorId!);
+        } else {
+          await _appointmentService.cancelAllNotifications();
+        }
+      } catch (e) {
+        print('Lỗi khi cập nhật setting: $e');
+      }
     }
   }
 
@@ -232,7 +287,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             // Bật/tắt thông báo
             SwitchListTile(
               title: Text(
@@ -248,13 +303,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 setState(() {
                   _notificationsEnabled = value;
                 });
+                _onSettingChanged(); // Add this line
               },
               activeColor: primaryColor,
             ),
-            
+
             if (_notificationsEnabled) ...[
               const Divider(),
-              
+
               // Chọn thời gian nhắc nhở
               ListTile(
                 title: Text(
@@ -281,11 +337,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       setState(() {
                         _reminderMinutes = value;
                       });
+                      _onSettingChanged(); // Add this line
                     }
                   },
                 ),
               ),
-              
+
               // Thông báo khi đến giờ
               SwitchListTile(
                 title: Text(
@@ -301,6 +358,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   setState(() {
                     _exactTimeNotification = value;
                   });
+                  _onSettingChanged(); // Add this line
                 },
                 activeColor: primaryColor,
               ),
@@ -336,7 +394,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             // Trạng thái quyền thông báo chính xác
             ListTile(
               leading: Icon(
@@ -348,24 +406,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w500),
               ),
               subtitle: Text(
-                _hasExactAlarmPermission 
+                _hasExactAlarmPermission
                     ? 'Đã cấp quyền '
                     : 'Chưa cấp quyền ',
                 style: GoogleFonts.lora(
-                  fontSize: 14, 
+                  fontSize: 14,
                   color: _hasExactAlarmPermission ? Colors.green : Colors.orange,
                 ),
               ),
-              trailing: _hasExactAlarmPermission 
-                  ? null 
+              trailing: _hasExactAlarmPermission
+                  ? null
                   : ElevatedButton(
-                      onPressed: _requestExactAlarmPermission,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: Text('Cấp quyền', style: GoogleFonts.lora()),
-                    ),
+                onPressed: _requestExactAlarmPermission,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text('Cấp quyền', style: GoogleFonts.lora()),
+              ),
             ),
           ],
         ),
@@ -398,13 +456,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             Text(
               'Hệ thống thông báo sẽ gửi:',
               style: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 8),
-            
+
             if (_notificationsEnabled) ...[
               _buildInfoItem('• Thông báo $_reminderMinutes phút trước giờ khám để chuẩn bị'),
               if (_exactTimeNotification)
@@ -412,12 +470,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ] else ...[
               _buildInfoItem('• Thông báo đã bị tắt'),
             ],
-            
+
             const SizedBox(height: 12),
             Text(
               'Lưu ý: Để thông báo hoạt động tốt nhất, hãy đảm bảo ứng dụng không bị tối ưu hóa pin.',
               style: GoogleFonts.lora(
-                fontSize: 12, 
+                fontSize: 12,
                 color: Colors.grey[600],
                 fontStyle: FontStyle.italic,
               ),

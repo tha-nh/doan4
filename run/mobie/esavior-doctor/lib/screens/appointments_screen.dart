@@ -1,190 +1,17 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest.dart' as tz;
+
 import 'package:timezone/timezone.dart' as tz;
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:workmanager/workmanager.dart';
+import '../service/appointment_service.dart';
 import 'appointment_details_screen.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'dart:io' show Platform;
-import 'package:device_info_plus/device_info_plus.dart';
+
 import 'dart:math' as math;
 
 // Enum để định nghĩa các loại filter
 enum FilterType { today, thisMonth, thisYear }
-
-// Hàm xử lý thông báo đẩy khi ứng dụng ở chế độ nền
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-}
-
-// Định nghĩa task cho Workmanager
-const String fetchAppointmentsTask = 'fetchAppointmentsTask';
-
-@pragma('vm:entry-point')
-void callbackDispatcher() {
-  Workmanager().executeTask((task, inputData) async {
-    print('Workmanager task fetchAppointmentsTask bắt đầu vào: ${DateTime.now()}');
-    try {
-      await Firebase.initializeApp();
-      tz.initializeTimeZones();
-      await initializeDateFormatting('vi', null);
-
-      final storage = FlutterSecureStorage();
-      final idString = await storage.read(key: 'doctor_id');
-
-      final notificationsEnabled = await storage.read(key: 'notifications_enabled');
-      final reminderMinutes = await storage.read(key: 'reminder_minutes');
-      final exactTimeNotification = await storage.read(key: 'exact_time_notification');
-
-      final isNotificationsEnabled = notificationsEnabled != 'false';
-      final reminderMinutesValue = int.tryParse(reminderMinutes ?? '15') ?? 15;
-      final isExactTimeEnabled = exactTimeNotification != 'false';
-
-      if (!isNotificationsEnabled) {
-        print('Thông báo đã bị tắt trong cài đặt');
-        return Future.value(true);
-      }
-
-      if (idString != null) {
-        final doctorId = int.tryParse(idString);
-        if (doctorId != null) {
-          final url = Uri.http('10.0.2.2:8081', '/api/v1/appointments/list', {
-            'doctor_id': doctorId.toString(),
-          });
-          final response = await http.get(url);
-          print('API response status: ${response.statusCode}');
-          if (response.statusCode == 200) {
-            final appointments = jsonDecode(response.body) as List<dynamic>;
-            print('Số lượng lịch hẹn nhận được: ${appointments.length}');
-            final now = tz.TZDateTime.now(tz.getLocation('Asia/Ho_Chi_Minh'));
-            final todayStart = tz.TZDateTime(tz.getLocation('Asia/Ho_Chi_Minh'), now.year, now.month, now.day);
-            final currentTime = DateTime.now();
-            final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-            final vietnamTimeZone = tz.getLocation('Asia/Ho_Chi_Minh');
-
-            for (var i = 0; i < appointments.length; i++) {
-              final Map<String, dynamic> a = Map<String, dynamic>.from(appointments[i]);
-              if (a['status'] != 'PENDING') continue;
-              final medicalDay = a['medical_day'];
-              if (medicalDay == null) continue;
-
-              try {
-                final parsedMedicalDay = DateTime.parse(medicalDay.toString());
-                if (parsedMedicalDay.isAtSameMomentAs(todayStart)) {
-                  final slot = a['slot'];
-                  const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
-                  if (slot is int && slot >= 1 && slot <= 8) {
-                    final appointmentHour = timeSlots[slot - 1];
-                    final appointmentTime = DateTime(
-                      parsedMedicalDay.year,
-                      parsedMedicalDay.month,
-                      parsedMedicalDay.day,
-                      appointmentHour,
-                    );
-                    final timeUntilAppointment = appointmentTime.difference(currentTime);
-
-                    final patientList = a['patient'] as List<dynamic>?;
-                    final patientName = patientList != null && patientList.isNotEmpty
-                        ? (patientList[0] as Map<String, dynamic>)['patient_name']?.toString() ?? 'Bệnh nhân ID: ${a['patient_id']}'
-                        : 'Bệnh nhân ID: ${a['patient_id'] ?? 'Không xác định'}';
-
-                    if (timeUntilAppointment.inMinutes > 0 && timeUntilAppointment.inMinutes <= (reminderMinutesValue + 5)) {
-                      print('Lập lịch thông báo ${reminderMinutesValue}p cho: $patientName, thời gian: $appointmentTime');
-
-                      final androidPlatformChannelSpecifics = AndroidNotificationDetails(
-                        'appointment_channel_${reminderMinutesValue}min',
-                        'Appointment Reminders ${reminderMinutesValue}min',
-                        channelDescription: 'Notifications $reminderMinutesValue minutes before appointments',
-                        importance: Importance.max,
-                        priority: Priority.high,
-                        showWhen: true,
-                        playSound: true,
-                        enableVibration: true,
-                        enableLights: true,
-                        ledColor: Colors.blue,
-                        ledOnMs: 1000,
-                        ledOffMs: 500,
-                        autoCancel: false,
-                        styleInformation: BigTextStyleInformation(
-                          'Lịch hẹn với $patientName vào lúc ${'$appointmentHour:00'} chỉ còn $reminderMinutesValue phút nữa! Hãy chuẩn bị sẵn sàng.',
-                        ),
-                      );
-
-                      final platformChannelSpecifics = NotificationDetails(
-                        android: androidPlatformChannelSpecifics,
-                      );
-
-                      await flutterLocalNotificationsPlugin.zonedSchedule(
-                        i,
-                        'Lịch hẹn sắp tới - $reminderMinutesValue phút',
-                        'Lịch hẹn với $patientName vào lúc ${'$appointmentHour:00'} chỉ còn $reminderMinutesValue phút nữa! Hãy chuẩn bị sẵn sàng.',
-                        tz.TZDateTime.from(appointmentTime.subtract(Duration(minutes: reminderMinutesValue)), vietnamTimeZone),
-                        platformChannelSpecifics,
-                        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-                      );
-                      print('Thông báo ${reminderMinutesValue}p đã được lập lịch cho ID: $i');
-
-                      if (isExactTimeEnabled) {
-                        final nearTimeAndroidDetails = AndroidNotificationDetails(
-                          'appointment_near_time_channel',
-                          'Appointment Near Time',
-                          channelDescription: 'Notifications 2 minutes before appointment time',
-                          importance: Importance.max,
-                          priority: Priority.high,
-                          showWhen: true,
-                          playSound: true,
-                          enableVibration: true,
-                          enableLights: true,
-                          ledColor: Colors.green,
-                          ledOnMs: 1000,
-                          ledOffMs: 500,
-                          autoCancel: false,
-                          styleInformation: BigTextStyleInformation(
-                            'Đã đến giờ khám với $patientName! Lịch hẹn lúc ${'$appointmentHour:00'} đã bắt đầu.',
-                          ),
-                        );
-
-                        final nearTimePlatformSpecifics = NotificationDetails(
-                          android: nearTimeAndroidDetails,
-                        );
-
-                        await flutterLocalNotificationsPlugin.zonedSchedule(
-                          i + 10000,
-                          'Đã đến giờ khám!',
-                          'Đã đến giờ khám với $patientName! Lịch hẹn lúc ${'$appointmentHour:00'} đã bắt đầu.',
-                          tz.TZDateTime.from(appointmentTime.subtract(Duration(minutes: 2)), vietnamTimeZone),
-                          nearTimePlatformSpecifics,
-                          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-                        );
-                        print('Thông báo "đã đến giờ khám" (2p trước) đã được lập lịch cho ID: ${i + 10000}');
-                      }
-                    }
-                  }
-                }
-              } catch (e) {
-                print('Lỗi khi xử lý lịch hẹn $i: $e');
-                continue;
-              }
-            }
-          } else {
-            print('Lỗi API: ${response.statusCode}');
-          }
-        }
-      }
-    } catch (e) {
-      print('Lỗi trong Workmanager: $e');
-    }
-    return Future.value(true);
-  });
-}
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key, required this.doctorId});
@@ -196,6 +23,8 @@ class AppointmentsScreen extends StatefulWidget {
 
 class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProviderStateMixin {
   final _storage = const FlutterSecureStorage();
+  final _appointmentService = AppointmentService();
+
   List<dynamic> appointments = [];
   int? _doctorId;
   bool _isLoading = true;
@@ -210,14 +39,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
   late Animation<double> _fadeAnimation;
   late Animation<double> _filterAnimation;
 
-  bool _hasExactAlarmPermission = false;
-
-  bool _notificationsEnabled = true;
-  int _reminderMinutes = 15;
-  bool _exactTimeNotification = true;
-
   FilterType _currentFilter = FilterType.today;
-  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   static const Color primaryColor = Color(0xFF2196F3);
   static const Color primaryDarkColor = Color(0xFF1976D2);
@@ -229,14 +51,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
   static const Color textColor = Color(0xFF1A1A1A);
   static const Color textSecondaryColor = Color(0xFF64748B);
   static const Color shadowColor = Color(0x1A000000);
-
-  String getTimeSlot(dynamic slot) {
-    const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
-    if (slot is int && slot >= 1 && slot <= 8) {
-      return '${timeSlots[slot - 1]}:00';
-    }
-    return 'Chưa xác định';
-  }
 
   @override
   void initState() {
@@ -278,7 +92,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _filterAnimationController,
-      curve: Curves.easeInOut, // Changed from easeOutBack to avoid overshoot
+      curve: Curves.easeInOut,
     ));
 
     _initializeApp();
@@ -286,11 +100,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
 
   Future<void> _initializeApp() async {
     await _initializeDateFormatting();
-    await _initializeFirebase();
-    await _initializeTimezone();
-    await _initializeNotifications();
-    _scheduleBackgroundFetch();
-    await _loadNotificationSettings();
+    await _appointmentService.initializeService();
     await _loadDoctorIdAndFetch();
   }
 
@@ -303,308 +113,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
       print('Lỗi khi khởi tạo locale: $e');
       _isLocaleInitialized = false;
     }
-  }
-
-  Future<void> _loadNotificationSettings() async {
-    try {
-      final notificationsEnabled = await _storage.read(key: 'notifications_enabled');
-      final reminderMinutes = await _storage.read(key: 'reminder_minutes');
-      final exactTimeNotification = await _storage.read(key: 'exact_time_notification');
-
-      setState(() {
-        _notificationsEnabled = notificationsEnabled != 'false';
-        _reminderMinutes = int.tryParse(reminderMinutes ?? '15') ?? 15;
-        _exactTimeNotification = exactTimeNotification != 'false';
-      });
-
-      print('Đã tải cài đặt thông báo: enabled=$_notificationsEnabled, minutes=$_reminderMinutes, exactTime=$_exactTimeNotification');
-    } catch (e) {
-      print('Lỗi khi tải cài đặt thông báo: $e');
-    }
-  }
-
-  Future<void> _initializeFirebase() async {
-    try {
-      await Firebase.initializeApp();
-      print('Firebase khởi tạo thành công');
-      FirebaseMessaging messaging = FirebaseMessaging.instance;
-      await messaging.requestPermission();
-      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        if (message.notification != null) {
-          print('Thông báo khi ứng dụng chạy: ${message.notification!.title}');
-        }
-      });
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-      String? token = await messaging.getToken();
-      if (token != null) {
-        print('FCM Token: $token');
-      } else {
-        print('Không lấy được FCM Token');
-      }
-    } catch (e) {
-      print('Lỗi khởi tạo Firebase: $e');
-    }
-  }
-
-  Future<void> _initializeTimezone() async {
-    tz.initializeTimeZones();
-  }
-
-  Future<void> _checkAndRequestPermissionsBasedOnVersion() async {
-    if (!Platform.isAndroid) return;
-
-    try {
-      final deviceInfo = DeviceInfoPlugin();
-      final androidInfo = await deviceInfo.androidInfo;
-      final sdkVersion = androidInfo.version.sdkInt;
-
-      print('Android SDK Version: $sdkVersion');
-
-      if (sdkVersion >= 33) {
-        final notificationStatus = await Permission.notification.status;
-        if (!notificationStatus.isGranted) {
-          await Permission.notification.request();
-        }
-
-        final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
-        if (!exactAlarmStatus.isGranted) {
-          await Permission.scheduleExactAlarm.request();
-        }
-
-        _hasExactAlarmPermission = await Permission.scheduleExactAlarm.isGranted;
-
-      } else if (sdkVersion >= 31) {
-        final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
-        if (!exactAlarmStatus.isGranted) {
-          await Permission.scheduleExactAlarm.request();
-        }
-
-        _hasExactAlarmPermission = await Permission.scheduleExactAlarm.isGranted;
-
-      } else {
-        _hasExactAlarmPermission = true;
-      }
-
-      print('Trạng thái quyền exact alarm: $_hasExactAlarmPermission');
-
-    } catch (e) {
-      print('Lỗi khi kiểm tra phiên bản và quyền: $e');
-      _hasExactAlarmPermission = false;
-    }
-  }
-
-  Future<void> _initializeNotifications() async {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-    AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-    );
-
-    await _flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        print('Người dùng nhấn vào thông báo: ${response.payload}');
-      },
-    );
-
-    const AndroidNotificationChannel highImportanceChannel = AndroidNotificationChannel(
-      'high_importance_channel',
-      'Thông báo quan trọng',
-      description: 'Thông báo lịch hẹn và nhắc nhở quan trọng',
-      importance: Importance.max,
-      playSound: true,
-      enableVibration: true,
-      enableLights: true,
-      ledColor: Color.fromARGB(255, 255, 0, 0),
-      showBadge: true,
-    );
-
-    const AndroidNotificationChannel nearTimeChannel = AndroidNotificationChannel(
-      'appointment_near_time_channel',
-      'Thông báo đã đến giờ khám',
-      description: 'Thông báo 2 phút trước giờ khám với nội dung đã đến giờ',
-      importance: Importance.max,
-      playSound: true,
-      enableVibration: true,
-      enableLights: true,
-      ledColor: Color.fromARGB(255, 0, 255, 0),
-      showBadge: true,
-    );
-
-    final androidPlugin = _flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-
-    if (androidPlugin != null) {
-      await androidPlugin.createNotificationChannel(highImportanceChannel);
-      await androidPlugin.createNotificationChannel(nearTimeChannel);
-      final granted = await androidPlugin.requestNotificationsPermission();
-      print('Quyền thông báo Android: ${granted ?? false}');
-    }
-
-    await _checkAndRequestPermissionsBasedOnVersion();
-  }
-
-  Future<void> _scheduleNotification({
-    required int id,
-    required String patientName,
-    required String timeSlot,
-    required DateTime appointmentTime,
-  }) async {
-    if (!_notificationsEnabled) {
-      print('Thông báo đã bị tắt, không lập lịch cho: $patientName');
-      return;
-    }
-
-    try {
-      final vietnamTimeZone = tz.getLocation('Asia/Ho_Chi_Minh');
-      final currentTime = DateTime.now();
-
-      final notificationTime = appointmentTime.subtract(Duration(minutes: _reminderMinutes));
-
-      if (notificationTime.isBefore(currentTime)) {
-        print('⚠️ Thời gian thông báo đã qua, không thể lập lịch cho: $patientName lúc $timeSlot');
-
-        if (appointmentTime.isAfter(currentTime) &&
-            appointmentTime.difference(currentTime).inMinutes >= 1) {
-          print('🔄 Chuyển sang thông báo ngay lập tức vì thời gian thông báo đã qua');
-
-          final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-            'appointment_immediate_channel',
-            'Immediate Appointment Reminders',
-            channelDescription: 'Immediate notifications for upcoming appointments',
-            importance: Importance.max,
-            priority: Priority.high,
-            showWhen: true,
-            playSound: true,
-            enableVibration: true,
-            enableLights: true,
-            ledColor: Colors.red,
-            ledOnMs: 1000,
-            ledOffMs: 500,
-          );
-
-          final NotificationDetails platformChannelSpecifics = NotificationDetails(
-            android: androidDetails,
-          );
-
-          await _flutterLocalNotificationsPlugin.show(
-            id,
-            'Lịch hẹn sắp tới!',
-            'Lịch hẹn với $patientName vào lúc $timeSlot sắp diễn ra! Còn ${appointmentTime.difference(currentTime).inMinutes} phút nữa.',
-            platformChannelSpecifics,
-          );
-
-          print('✅ Đã hiển thị thông báo ngay lập tức cho: $patientName lúc $timeSlot');
-        }
-        return;
-      }
-
-      final timeUntilAppointment = appointmentTime.difference(currentTime);
-
-      if (timeUntilAppointment.inMinutes <= 0) {
-        print('Lịch hẹn đã qua, không lập thông báo');
-        return;
-      }
-
-      final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        'appointment_channel_${_reminderMinutes}min',
-        'Appointment Reminders ${_reminderMinutes}min',
-        channelDescription: 'Notifications $_reminderMinutes minutes before appointments',
-        importance: Importance.max,
-        priority: Priority.high,
-        showWhen: true,
-        playSound: true,
-        enableVibration: true,
-        styleInformation: BigTextStyleInformation(
-          'Lịch hẹn với $patientName vào lúc $timeSlot chỉ còn $_reminderMinutes phút nữa! Hãy chuẩn bị sẵn sàng.',
-        ),
-        enableLights: true,
-        ledColor: Colors.blue,
-        ledOnMs: 1000,
-        ledOffMs: 500,
-      );
-
-      final NotificationDetails platformChannelSpecifics = NotificationDetails(
-        android: androidDetails,
-      );
-
-      final tzScheduledTime = tz.TZDateTime.from(
-        notificationTime,
-        vietnamTimeZone,
-      );
-
-      AndroidScheduleMode scheduleMode = _hasExactAlarmPermission
-          ? AndroidScheduleMode.exactAllowWhileIdle
-          : AndroidScheduleMode.inexactAllowWhileIdle;
-
-      await _flutterLocalNotificationsPlugin.zonedSchedule(
-        id,
-        'Lịch hẹn sắp tới - $_reminderMinutes phút',
-        'Lịch hẹn với $patientName vào lúc $timeSlot chỉ còn $_reminderMinutes phút nữa! Hãy chuẩn bị sẵn sàng.',
-        tzScheduledTime,
-        platformChannelSpecifics,
-        androidScheduleMode: scheduleMode,
-      );
-
-      print('✅ Đã lập lịch thông báo ${_reminderMinutes}p cho: $patientName lúc $tzScheduledTime (ID $id)');
-
-      if (_exactTimeNotification) {
-        final nearTimeNotificationTime = appointmentTime.subtract(const Duration(minutes: 2));
-
-        if (nearTimeNotificationTime.isAfter(currentTime)) {
-          final nearTimeAndroidDetails = AndroidNotificationDetails(
-            'appointment_near_time_channel',
-            'Appointment Near Time',
-            channelDescription: 'Notifications 2 minutes before appointment time',
-            importance: Importance.max,
-            priority: Priority.high,
-            showWhen: true,
-            playSound: true,
-            enableVibration: true,
-            enableLights: true,
-            ledColor: Colors.green,
-            ledOnMs: 1000,
-            ledOffMs: 500,
-            styleInformation: BigTextStyleInformation(
-              'Đã đến giờ khám với $patientName! Lịch hẹn lúc $timeSlot đã bắt đầu.',
-            ),
-          );
-
-          final nearTimePlatformSpecifics = NotificationDetails(
-            android: nearTimeAndroidDetails,
-          );
-
-          final tzNearTime = tz.TZDateTime.from(
-            nearTimeNotificationTime,
-            vietnamTimeZone,
-          );
-
-          await _flutterLocalNotificationsPlugin.zonedSchedule(
-            id + 10000,
-            'Đã đến giờ khám!',
-            'Đã đến giờ khám với $patientName! Lịch hẹn lúc $timeSlot đã bắt đầu.',
-            tzNearTime,
-            nearTimePlatformSpecifics,
-            androidScheduleMode: scheduleMode,
-          );
-
-          print('✅ Đã lập lịch thông báo "đã đến giờ khám" (2p trước) cho: $patientName lúc $tzNearTime (ID ${id + 10000})');
-        }
-      }
-    } catch (e) {
-      print('❌ Lỗi khi lập lịch thông báo: $e');
-    }
-  }
-
-  void _scheduleBackgroundFetch() {
-    Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
-    Workmanager().registerPeriodicTask(
-      'fetch-appointments',
-      fetchAppointmentsTask,
-      frequency: Duration(minutes: 10),
-      initialDelay: Duration(minutes: 2),
-    );
   }
 
   @override
@@ -655,95 +163,20 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
       _errorMessage = null;
     });
 
-    final url = Uri.http('10.0.2.2:8081', '/api/v1/appointments/list', {
-      'doctor_id': _doctorId.toString(),
-    });
-
     try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        setState(() {
-          appointments = jsonDecode(response.body) as List<dynamic>;
-          _errorMessage = null;
-        });
-        _scheduleNotificationsForToday();
-      } else {
-        setState(() {
-          _errorMessage = 'Lỗi khi tải danh sách lịch hẹn: ${response.statusCode}';
-        });
-      }
+      final fetchedAppointments = await _appointmentService.fetchAppointments(_doctorId!);
+      setState(() {
+        appointments = fetchedAppointments;
+        _errorMessage = null;
+      });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Lỗi kết nối. Vui lòng thử lại!';
+        _errorMessage = e.toString();
       });
     } finally {
       setState(() {
         _isLoading = false;
       });
-    }
-  }
-
-  void _scheduleNotificationsForToday() {
-    if (!_notificationsEnabled) {
-      print('Thông báo đã bị tắt, không lập lịch thông báo');
-      return;
-    }
-
-    final now = tz.TZDateTime.now(tz.getLocation('Asia/Ho_Chi_Minh'));
-    final todayStart = tz.TZDateTime(tz.getLocation('Asia/Ho_Chi_Minh'), now.year, now.month, now.day);
-    final currentTime = DateTime.now();
-
-    print('Kiểm tra lịch hẹn để lập thông báo vào: $now');
-    for (var i = 0; i < appointments.length; i++) {
-      final Map<String, dynamic> a = Map<String, dynamic>.from(appointments[i]);
-      if (a['status'] != 'PENDING') {
-        print('Bỏ qua lịch hẹn ID ${a['appointment_id']}: Không phải PENDING');
-        continue;
-      }
-
-      final medicalDay = a['medical_day'];
-      if (medicalDay == null) {
-        print('Bỏ qua lịch hẹn ID ${a['appointment_id']}: Không có medical_day');
-        continue;
-      }
-
-      try {
-        final parsedMedicalDay = DateTime.parse(medicalDay.toString());
-        if (parsedMedicalDay.isAtSameMomentAs(todayStart)) {
-          final slot = a['slot'];
-          const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
-          if (slot is int && slot >= 1 && slot <= 8) {
-            final appointmentHour = timeSlots[slot - 1];
-            final appointmentTime = DateTime(
-              parsedMedicalDay.year,
-              parsedMedicalDay.month,
-              parsedMedicalDay.day,
-              appointmentHour,
-            );
-            final timeUntilAppointment = appointmentTime.difference(currentTime);
-
-            if (timeUntilAppointment.inMinutes > 0 && timeUntilAppointment.inMinutes <= (_reminderMinutes + 5)) {
-              final patientList = a['patient'] as List<dynamic>?;
-              final patientName = patientList != null && patientList.isNotEmpty
-                  ? (patientList[0] as Map<String, dynamic>)['patient_name']?.toString() ?? 'Bệnh nhân ID: ${a['patient_id']}'
-                  : 'Bệnh nhân ID: ${a['patient_id'] ?? 'Không xác định'}';
-
-              print('Lập lịch thông báo cho $patientName vào $appointmentTime');
-              _scheduleNotification(
-                id: i,
-                patientName: patientName,
-                timeSlot: getTimeSlot(slot),
-                appointmentTime: appointmentTime,
-              );
-            } else {
-              print('Lịch hẹn ID ${a['appointment_id']} không nằm trong khoảng thời gian phù hợp');
-            }
-          }
-        }
-      } catch (e) {
-        print('Lỗi khi xử lý lịch hẹn ID ${a['appointment_id']}: $e');
-        continue;
-      }
     }
   }
 
@@ -845,7 +278,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
 
   Widget _buildHeader() {
     return SizedBox(
-      height: 180, // Keep the fixed height as per your design
+      height: 180,
       child: ClipRect(
         child: SingleChildScrollView(
           child: Container(
@@ -906,7 +339,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                           ],
                         ),
                       ),
-                      if (!_notificationsEnabled)
+                      if (!_appointmentService.notificationsEnabled)
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
@@ -928,9 +361,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
             ),
           ),
         ),
-
       ),
-
     );
   }
 
@@ -960,13 +391,13 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
             color: Colors.white,
           ),
         ),
-        const SizedBox(width: 8), // Reduced from 12 to 8
+        const SizedBox(width: 8),
         Expanded(
           child: _buildStatCard(
             icon: Icons.notifications_active,
             label: 'Thông báo',
-            value: _notificationsEnabled ? 'BẬT' : 'TẮT',
-            color: _notificationsEnabled ? successColor : errorColor,
+            value: _appointmentService.notificationsEnabled ? 'BẬT' : 'TẮT',
+            color: _appointmentService.notificationsEnabled ? successColor : errorColor,
           ),
         ),
       ],
@@ -980,10 +411,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(7), // Reduced from 12 to 8
+      padding: const EdgeInsets.all(7),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(10), // Reduced from 12 to 10
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: Colors.white.withOpacity(0.2),
           width: 1,
@@ -991,12 +422,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 18), // Reduced from 20 to 18
-          const SizedBox(height: 4), // Reduced from 6 to 4
+          Icon(icon, color: color, size: 18),
+          const SizedBox(height: 4),
           Text(
             value,
             style: GoogleFonts.lora(
-              fontSize: 14, // Reduced from 16 to 14
+              fontSize: 14,
               fontWeight: FontWeight.w700,
               color: Colors.white,
             ),
@@ -1004,7 +435,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
           Text(
             label,
             style: GoogleFonts.lora(
-              fontSize: 9, // Reduced from 10 to 9
+              fontSize: 9,
               color: Colors.white.withOpacity(0.8),
             ),
           ),
@@ -1102,7 +533,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
         ? (patientList[0] as Map<String, dynamic>)['patient_name']?.toString() ?? 'Bệnh nhân ID: ${appointmentData['patient_id']}'
         : 'Bệnh nhân ID: ${appointmentData['patient_id'] ?? 'Không xác định'}';
 
-    final timeSlot = getTimeSlot(appointmentData['slot']);
+    final timeSlot = _appointmentService.getTimeSlot(appointmentData['slot']);
     final appointmentDate = _formatDateVerbose(appointmentData['medical_day']?.toString());
 
     String timeUntilText = '';
@@ -1474,17 +905,14 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
       backgroundColor: backgroundColor,
       body: Column(
         children: [
-          // Constrain header height
           SizedBox(
-            height: 170, // Adjust based on your design needs
+            height: 170,
             child: _buildHeader(),
           ),
-          // Constrain filter buttons height
           SizedBox(
-            height: 70, // Adjust based on your design needs
+            height: 70,
             child: _buildFilterButtons(),
           ),
-          // Expanded to take remaining space
           Expanded(
             child: ClipRect(
               child: _isLoading
@@ -1513,7 +941,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                   ? _buildEmptyState()
                   : RefreshIndicator(
                 onRefresh: () async {
-                  await _loadNotificationSettings();
+                  await _appointmentService.loadNotificationSettings();
                   await fetchAppointments();
                 },
                 color: primaryColor,
