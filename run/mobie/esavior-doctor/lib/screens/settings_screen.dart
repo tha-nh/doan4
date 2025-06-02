@@ -4,8 +4,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
 import 'package:device_info_plus/device_info_plus.dart';
-import '../service/optimized_appointment_service.dart';
-import '../service/scheduled_notifications_viewer.dart';
+import '../service/appointment_service.dart';
+import 'scheduled_notifications_viewer.dart';
 
 
 class SettingsScreen extends StatefulWidget {

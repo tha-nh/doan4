@@ -1,30 +1,17 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'notification_id_manager.dart';
 import 'notification_cache_manager.dart';
-
-// Background message handler
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  print('📨 Background message: ${message.notification?.title}');
-
-  if (message.data['action'] == 'refresh_appointments') {
-    print('🔄 Triggering appointment refresh from background');
-    // Background refresh sẽ được handle bởi Workmanager
-  }
-}
 
 // Optimized background task
 const String fetchAppointmentsTask = 'fetchAppointmentsTask';
@@ -35,7 +22,6 @@ void callbackDispatcher() {
     print('🔄 Background task started: $task');
 
     try {
-      await Firebase.initializeApp();
       tz.initializeTimeZones();
       await initializeDateFormatting('vi', null);
 
@@ -139,6 +125,10 @@ Future<void> _scheduleBackgroundNotifications(
     final vietnamTimeZone = tz.getLocation('Asia/Ho_Chi_Minh');
     final now = DateTime.now();
 
+    // Get the start and end of today
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(Duration(days: 1));
+
     int scheduledCount = 0;
     List<int> scheduledIds = [];
 
@@ -148,6 +138,9 @@ Future<void> _scheduleBackgroundNotifications(
         final appointmentTime = _getAppointmentDateTime(appointment);
 
         if (!appointmentTime.isAfter(now)) continue;
+
+        // Only schedule notifications for today's appointments
+        if (!appointmentTime.isBefore(tomorrow)) continue;
 
         final patientName = _getPatientName(appointment);
         final timeSlot = _getTimeSlot(appointment['slot']);
@@ -198,7 +191,7 @@ Future<void> _scheduleBackgroundNotifications(
     // Cache scheduled notification IDs
     await NotificationCacheManager.cacheScheduledNotifications(scheduledIds);
 
-    print('📊 Background scheduled $scheduledCount notifications');
+    print('📊 Background scheduled $scheduledCount notifications for today');
   } catch (e) {
     print('❌ Background notification scheduling error: $e');
   }
@@ -238,6 +231,7 @@ Future<void> _scheduleNotification(
   }
 }
 
+// Modified to filter all future appointments
 List<Map<String, dynamic>> _filterFutureAppointments(List<dynamic> appointments) {
   final result = <Map<String, dynamic>>[];
   final now = DateTime.now();
@@ -249,6 +243,8 @@ List<Map<String, dynamic>> _filterFutureAppointments(List<dynamic> appointments)
       if (a['status'] != 'PENDING') continue;
 
       final appointmentTime = _getAppointmentDateTime(a);
+
+      // Include all future appointments
       if (appointmentTime.isAfter(now)) {
         result.add(a);
       }
@@ -326,9 +322,6 @@ class OptimizedAppointmentService {
     }
 
     try {
-      print('🔧 Initializing Firebase...');
-      await _initializeFirebase();
-
       print('🔧 Initializing Timezone...');
       await _initializeTimezone();
 
@@ -362,9 +355,6 @@ class OptimizedAppointmentService {
     }
 
     try {
-      print('🔧 Setting up Firebase messaging...');
-      await _setupFirebaseMessaging(doctorId);
-
       print('🔧 Scheduling optimized background tasks...');
       await _scheduleOptimizedBackgroundFetch();
 
@@ -377,32 +367,6 @@ class OptimizedAppointmentService {
     } catch (e) {
       print('❌ Phase 2 error: $e');
       // Don't throw to keep app functional
-    }
-  }
-
-  Future<void> _initializeFirebase() async {
-    try {
-      await Firebase.initializeApp();
-
-      FirebaseMessaging messaging = FirebaseMessaging.instance;
-      await messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        provisional: false,
-      );
-
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-      final token = await messaging.getToken();
-      if (token != null) {
-        print('🔑 FCM Token: ${token.substring(0, 20)}...');
-      }
-
-      print('✅ Firebase ready');
-    } catch (e) {
-      print('❌ Firebase error: $e');
-      throw e;
     }
   }
 
@@ -533,48 +497,6 @@ class OptimizedAppointmentService {
     }
   }
 
-  Future<void> _setupFirebaseMessaging(int doctorId) async {
-    try {
-      FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-      // Subscribe to topics
-      await messaging.subscribeToTopic('doctor_$doctorId');
-      await messaging.subscribeToTopic('appointments_update');
-      print('📡 Subscribed to Firebase topics');
-
-      // Listen for foreground messages
-      FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-        print('📨 Foreground message: ${message.notification?.title}');
-
-        if (message.data['action'] == 'refresh_appointments') {
-          print('🔄 Refreshing appointments from push notification');
-          await refreshAppointments(doctorId);
-        }
-
-        // Show push notification
-        if (message.notification != null) {
-          final pushId = NotificationIdManager.generatePushId();
-          await _flutterLocalNotificationsPlugin.show(
-            pushId,
-            message.notification!.title,
-            message.notification!.body,
-            NotificationDetails(
-              android: AndroidNotificationDetails(
-                'appointment_reminder_channel',
-                'Appointment Reminders',
-                importance: Importance.max,
-                priority: Priority.high,
-              ),
-            ),
-          );
-        }
-      });
-
-    } catch (e) {
-      print('❌ Firebase messaging setup error: $e');
-    }
-  }
-
   Future<void> _scheduleOptimizedBackgroundFetch() async {
     try {
       // Cancel existing tasks
@@ -655,6 +577,7 @@ class OptimizedAppointmentService {
           final allAppointments = jsonDecode(response.body) as List<dynamic>;
           print('📅 Fetched ${allAppointments.length} total appointments');
 
+          // Modified to filter all future appointments
           final filteredAppointments = _filterFutureAppointments(allAppointments);
           print('📅 Filtered to ${filteredAppointments.length} future appointments');
 
@@ -680,6 +603,7 @@ class OptimizedAppointmentService {
     return [];
   }
 
+  // Modified to filter all future appointments
   List<Map<String, dynamic>> _filterFutureAppointments(List<dynamic> appointments) {
     final result = <Map<String, dynamic>>[];
     final now = DateTime.now();
@@ -706,6 +630,7 @@ class OptimizedAppointmentService {
             appointmentHour,
           );
 
+          // Include all future appointments
           if (appointmentTime.isAfter(now)) {
             result.add(a);
           }
@@ -763,31 +688,34 @@ class OptimizedAppointmentService {
       return;
     }
 
-    // Cancel tất cả notifications cũ
+    // Cancel all old notifications
     await cancelAllNotifications();
 
     final now = DateTime.now();
-    final vietnamTimeZone = tz.getLocation('Asia/Ho_Chi_Minh');
 
-    // Lọc và sắp xếp appointments
-    final validAppointments = appointments.where((apt) {
+    // Get the start and end of today
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(Duration(days: 1));
+
+    // Filter and sort appointments for today only (for notifications)
+    final todayAppointments = appointments.where((apt) {
       try {
         final appointmentTime = _getAppointmentDateTime(apt);
-        return appointmentTime.isAfter(now);
+        return appointmentTime.isAfter(now) && appointmentTime.isBefore(tomorrow);
       } catch (e) {
         return false;
       }
     }).toList();
 
-    // Sắp xếp theo thời gian
-    validAppointments.sort((a, b) {
+    // Sort by time
+    todayAppointments.sort((a, b) {
       final timeA = _getAppointmentDateTime(a);
       final timeB = _getAppointmentDateTime(b);
       return timeA.compareTo(timeB);
     });
 
-    // Giới hạn số lượng notifications (Android có giới hạn)
-    final limitedAppointments = validAppointments.take(50).toList();
+    // Limit number of notifications (Android has limits)
+    final limitedAppointments = todayAppointments.take(50).toList();
 
     int successCount = 0;
     List<int> scheduledIds = [];
@@ -803,10 +731,10 @@ class OptimizedAppointmentService {
       }
     }
 
-    print('📊 Successfully scheduled $successCount/${limitedAppointments.length} notifications');
+    print('📊 Successfully scheduled $successCount/${limitedAppointments.length} notifications for today');
 
-    // Cache appointments và scheduled IDs
-    await NotificationCacheManager.cacheAppointments(validAppointments);
+    // Cache all future appointments but only schedule notifications for today
+    await NotificationCacheManager.cacheAppointments(appointments);
     await NotificationCacheManager.cacheScheduledNotifications(scheduledIds);
   }
 
@@ -818,7 +746,7 @@ class OptimizedAppointmentService {
       final patientName = _getPatientName(appointment);
       final timeSlot = getTimeSlot(appointment['slot']);
 
-      // Tính toán thời gian thông báo
+      // Calculate notification times
       final reminderTime = appointmentTime.subtract(Duration(minutes: _reminderMinutes));
       final exactTime = appointmentTime.subtract(Duration(minutes: 2));
 
@@ -961,5 +889,80 @@ class OptimizedAppointmentService {
     } catch (e) {
       print('❌ Cleanup error: $e');
     }
+  }
+
+  // Add this method to the OptimizedAppointmentService class
+
+// Method to fetch past appointments
+  Future<List<Map<String, dynamic>>> fetchPastAppointments(int doctorId) async {
+    try {
+      final url = Uri.http('10.0.2.2:8081', '/api/v1/appointments/list', {
+        'doctor_id': doctorId.toString(),
+      });
+
+      final response = await http.get(url).timeout(Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final allAppointments = jsonDecode(response.body) as List<dynamic>;
+        print('📅 Fetched ${allAppointments.length} total appointments for past filter');
+
+        // Filter past appointments
+        final pastAppointments = _filterPastAppointments(allAppointments);
+        print('📅 Filtered to ${pastAppointments.length} past appointments');
+
+        return pastAppointments;
+      } else {
+        throw Exception('API Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Fetch past appointments error: $e');
+      throw Exception('Unable to fetch past appointments: $e');
+    }
+  }
+
+// Method to filter past appointments
+  List<Map<String, dynamic>> _filterPastAppointments(List<dynamic> appointments) {
+    final result = <Map<String, dynamic>>[];
+    final now = DateTime.now();
+    const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
+
+    for (var appointment in appointments) {
+      try {
+        final Map<String, dynamic> a = Map<String, dynamic>.from(appointment);
+
+        // Include all statuses for past appointments (COMPLETED, CANCELLED, etc.)
+        final medicalDay = a['medical_day'];
+        if (medicalDay == null) continue;
+
+        final parsedMedicalDay = DateTime.parse(medicalDay.toString());
+        final slot = a['slot'];
+
+        if (slot is int && slot >= 1 && slot <= 8) {
+          final appointmentHour = timeSlots[slot - 1];
+          final appointmentTime = DateTime(
+            parsedMedicalDay.year,
+            parsedMedicalDay.month,
+            parsedMedicalDay.day,
+            appointmentHour,
+          );
+
+          // Include appointments that have passed
+          if (appointmentTime.isBefore(now)) {
+            result.add(a);
+          }
+        }
+      } catch (e) {
+        print('❌ Error filtering past appointment: $e');
+      }
+    }
+
+    // Sort by appointment time (most recent first)
+    result.sort((a, b) {
+      final timeA = _getAppointmentDateTime(a);
+      final timeB = _getAppointmentDateTime(b);
+      return timeB.compareTo(timeA); // Reverse order for past appointments
+    });
+
+    return result;
   }
 }

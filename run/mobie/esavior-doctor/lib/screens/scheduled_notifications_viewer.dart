@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'notification_cache_manager.dart';
-import 'notification_id_manager.dart';
+import '../service/notification_cache_manager.dart';
+import '../service/notification_id_manager.dart';
 
 
 class ScheduledNotificationsViewer extends StatefulWidget {

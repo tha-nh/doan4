@@ -1,3 +1,4 @@
+import 'package:esavior_doctor/screens/past_appointments_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
@@ -5,11 +6,9 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:timezone/timezone.dart' as tz;
 
-import '../service/optimized_appointment_service.dart';
-import '../service/scheduled_notifications_viewer.dart';
- // Updated import
+import '../service/appointment_service.dart';
 import '../screens/settings_screen.dart'; // Add settings import
-// Add notification viewer import
+
 import 'appointment_details_screen.dart';
 import 'dart:math' as math;
 
@@ -112,9 +111,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
     try {
       await initializeDateFormatting('vi', null);
       _isLocaleInitialized = true;
-      print('Đã khởi tạo locale tiếng Việt thành công');
+      // print('Đã khởi tạo locale tiếng Việt thành công');
     } catch (e) {
-      print('Lỗi khi khởi tạo locale: $e');
+      // print('Lỗi khi khởi tạo locale: $e');
       _isLocaleInitialized = false;
     }
   }
@@ -388,21 +387,26 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                       // Add notification and settings buttons
                       Row(
                         children: [
-                          // Notification status indicator
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: _appointmentService.notificationsEnabled
-                                  ? Colors.green.withOpacity(0.2)
-                                  : Colors.red.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              _appointmentService.notificationsEnabled
-                                  ? Icons.notifications_active
-                                  : Icons.notifications_off,
-                              color: Colors.white,
-                              size: 20,
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PastAppointmentsScreen(doctorId: _doctorId!),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.history,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -432,6 +436,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                               ),
                             ),
                           ),
+
+
                         ],
                       ),
                     ],
@@ -952,28 +958,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
           ),
         ],
       ),
-      // Add floating action button for quick access to notifications
-      floatingActionButton: AnimatedBuilder(
-        animation: _fabAnimationController,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _fabAnimationController.value,
-            child: FloatingActionButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ScheduledNotificationsViewer(),
-                  ),
-                );
-              },
-              backgroundColor: primaryColor,
-              foregroundColor: Colors.white,
-              child: const Icon(Icons.schedule),
-            ),
-          );
-        },
-      ),
+
     );
   }
 

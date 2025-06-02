@@ -1,43 +1,22 @@
-import 'package:esavior_doctor/service/battery_optimization_helper.dart';
-import 'package:esavior_doctor/service/notification_popup.dart';
-import 'package:esavior_doctor/service/optimized_appointment_service.dart';
+import 'package:esavior_doctor/service/appointment_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
-
 
 // Global notification plugin instance
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 FlutterLocalNotificationsPlugin();
 
-// Global navigator key để có thể show popup từ bất kỳ đâu
+// Global navigator key
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
-// Background message handler
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('📨 Background message received: ${message.notification?.title}');
-
-  // Show notification popup nếu app đang foreground
-  if (navigatorKey.currentContext != null) {
-    _showNotificationPopup(
-      navigatorKey.currentContext!,
-      message.notification?.title ?? 'Thông báo',
-      message.notification?.body ?? '',
-    );
-  }
-}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // Setup Firebase background message handler
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
     // PHASE 1: Khởi tạo các service cơ bản (TRƯỚC LOGIN)
     print('🚀 Phase 1: Khởi tạo services cơ bản...');
     await OptimizedAppointmentService().initializeBasicServices();
@@ -58,11 +37,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Doctor App',
       debugShowCheckedModeBanner: false,
-      navigatorKey: navigatorKey, // Thêm navigator key
+      navigatorKey: navigatorKey,
       theme: ThemeData(
         primarySwatch: Colors.blue,
         useMaterial3: true,
-        // Thêm theme cho notifications
         snackBarTheme: SnackBarThemeData(
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -123,47 +101,13 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
         _handleNotificationTap(response);
       },
     );
-
-    // Handle Firebase foreground messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('📨 Foreground message received: ${message.notification?.title}');
-
-      if (message.notification != null) {
-        _showNotificationPopup(
-          context,
-          message.notification!.title ?? 'Thông báo',
-          message.notification!.body ?? '',
-        );
-      }
-    });
-
-    // Handle notification tap when app was terminated
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('📨 App opened from notification: ${message.notification?.title}');
-      _handleFirebaseNotificationTap(message);
-    });
   }
 
   void _handleNotificationTap(NotificationResponse response) {
     print('👆 Local notification tapped: ${response.payload}');
 
-    // Show notification details popup
-    if (mounted) {
-      _showNotificationDetailsDialog(
-        'Thông báo lịch khám',
-        response.payload ?? 'Chi tiết thông báo',
-      );
-    }
-  }
-
-  void _handleFirebaseNotificationTap(RemoteMessage message) {
-    print('👆 Firebase notification tapped: ${message.data}');
-
     // Navigate to appropriate screen based on notification data
-    if (message.data['action'] == 'open_appointments') {
-      // Navigate to appointments screen
-      _navigateToAppointments();
-    }
+    _navigateToAppointments();
   }
 
   void _navigateToAppointments() {
@@ -195,14 +139,6 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
         _currentStatus = 'Đang kiểm tra quyền truy cập...';
       });
 
-      // Check permissions
-      await _checkPermissions();
-
-      setState(() {
-        _isPermissionsChecked = true;
-        _currentStatus = 'Đang kiểm tra đăng nhập...';
-      });
-
       // Check login status
       await _checkLogin();
 
@@ -212,23 +148,7 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
     }
   }
 
-  Future<void> _checkPermissions() async {
-    try {
-      // Check if battery optimization is disabled
-      final isBatteryOptimized = await BatteryOptimizationHelper.isBatteryOptimizationDisabled();
 
-      if (!isBatteryOptimized && mounted) {
-        // Show battery optimization dialog after a delay
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            BatteryOptimizationHelper.showBatteryOptimizationDialog(context);
-          }
-        });
-      }
-    } catch (e) {
-      print('❌ Permission check error: $e');
-    }
-  }
 
   Future<void> _checkLogin() async {
     try {
@@ -323,35 +243,6 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
     }
   }
 
-  void _showNotificationDetailsDialog(String title, String body) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.notifications_active, color: Colors.blue),
-            SizedBox(width: 8),
-            Expanded(child: Text(title)),
-          ],
-        ),
-        content: Text(body),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Đóng'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _navigateToAppointments();
-            },
-            child: Text('Xem lịch hẹn'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -440,21 +331,21 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
                   ),
                 ),
 
-                const SizedBox(height: 24),
-
-                // Enhanced progress indicators
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildProgressDot('Firebase', true, Icons.cloud),
-                    const SizedBox(width: 16),
-                    _buildProgressDot('Thông báo', _isBasicServicesReady, Icons.notifications),
-                    const SizedBox(width: 16),
-                    _buildProgressDot('Quyền', _isPermissionsChecked, Icons.security),
-                    const SizedBox(width: 16),
-                    _buildProgressDot('Dịch vụ', _isUserServicesReady, Icons.settings),
-                  ],
-                ),
+                // const SizedBox(height: 24),
+                //
+                // // Enhanced progress indicators
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.center,
+                //   children: [
+                //     _buildProgressDot('Dịch vụ', true, Icons.cloud),
+                //     const SizedBox(width: 16),
+                //     _buildProgressDot('Thông báo', _isBasicServicesReady, Icons.notifications),
+                //     const SizedBox(width: 16),
+                //     _buildProgressDot('Quyền', _isPermissionsChecked, Icons.security),
+                //     const SizedBox(width: 16),
+                //     _buildProgressDot('Dữ liệu', _isUserServicesReady, Icons.settings),
+                //   ],
+                // ),
 
                 const SizedBox(height: 48),
 
@@ -474,64 +365,46 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
     );
   }
 
-  Widget _buildProgressDot(String label, bool isCompleted, IconData icon) {
-    return Column(
-      children: [
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: isCompleted
-                ? Colors.white
-                : Colors.white.withOpacity(0.3),
-            shape: BoxShape.circle,
-            boxShadow: isCompleted ? [
-              BoxShadow(
-                color: Colors.white.withOpacity(0.3),
-                blurRadius: 8,
-                spreadRadius: 2,
-              ),
-            ] : null,
-          ),
-          child: Icon(
-            icon,
-            color: isCompleted
-                ? const Color(0xFF2196F3)
-                : Colors.white.withOpacity(0.5),
-            size: 20,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: isCompleted
-                ? Colors.white
-                : Colors.white.withOpacity(0.5),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// Helper function để show notification popup
-void _showNotificationPopup(BuildContext context, String title, String body) {
-  if (Navigator.canPop(context)) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => NotificationPopup(
-        title: title,
-        body: body,
-        onTap: () {
-          Navigator.pop(context);
-          // Navigate to appointments or relevant screen
-        },
-      ),
-    );
-  }
+  // Widget _buildProgressDot(String label, bool isCompleted, IconData icon) {
+  //   return Column(
+  //     children: [
+  //       AnimatedContainer(
+  //         duration: const Duration(milliseconds: 300),
+  //         width: 40,
+  //         height: 40,
+  //         decoration: BoxDecoration(
+  //           color: isCompleted
+  //               ? Colors.white
+  //               : Colors.white.withOpacity(0.3),
+  //           shape: BoxShape.circle,
+  //           boxShadow: isCompleted ? [
+  //             BoxShadow(
+  //               color: Colors.white.withOpacity(0.3),
+  //               blurRadius: 8,
+  //               spreadRadius: 2,
+  //             ),
+  //           ] : null,
+  //         ),
+  //         child: Icon(
+  //           icon,
+  //           color: isCompleted
+  //               ? const Color(0xFF2196F3)
+  //               : Colors.white.withOpacity(0.5),
+  //           size: 20,
+  //         ),
+  //       ),
+  //       const SizedBox(height: 8),
+  //       Text(
+  //         label,
+  //         style: TextStyle(
+  //           fontSize: 10,
+  //           color: isCompleted
+  //               ? Colors.white
+  //               : Colors.white.withOpacity(0.5),
+  //           fontWeight: FontWeight.w500,
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 }

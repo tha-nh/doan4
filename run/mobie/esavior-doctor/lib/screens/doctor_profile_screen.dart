@@ -35,7 +35,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
   static const Color primaryColor = Color(0xFF2196F3);
   static const Color primaryDark = Color(0xFF1976D2);
   static const Color accentColor = Color(0xFFFF9800);
-  static const Color accentLight = Color(0xFFFFB74D);
+  // static const Color accentLight = Color(0xFFFFB74D);
   static const Color backgroundColor = Color(0xFFF8FAFC);
   static const Color cardColor = Colors.white;
   static const Color errorColor = Color(0xFFE53E3E);
@@ -528,7 +528,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
 
   Widget _buildSliverAppBar() {
     return SliverAppBar(
-      automaticallyImplyLeading: false,
+      // automaticallyImplyLeading: false,
       expandedHeight: 320,
       floating: false,
       pinned: true,

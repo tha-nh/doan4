@@ -72,47 +72,10 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final appointmentData = jsonDecode(response.body);
-        final now = DateTime.now();
-        final today = DateTime(now.year, now.month, now.day);
-        final medicalDayStr = appointmentData['medical_day']?.toString();
-        bool isValid = true;
-
-        // Check if medical_day is today or in the future
-        if (medicalDayStr != null) {
-          try {
-            final medicalDay = DateTime.parse(medicalDayStr);
-            if (medicalDay.isBefore(today)) {
-              isValid = false; // Appointment is before today
-            } else if (medicalDay.isAtSameMomentAs(today)) {
-              // If medical_day is today, check if the time slot is in the future
-              final slot = appointmentData['slot'];
-              final currentHour = now.hour;
-              const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
-              if (slot is int && slot >= 1 && slot <= 8) {
-                final appointmentHour = timeSlots[slot - 1];
-                if (appointmentHour <= currentHour) {
-                  isValid = false; // Time slot has passed
-                }
-              }
-            }
-          } catch (e) {
-            isValid = false; // Invalid date format
-          }
-        } else {
-          isValid = false; // No medical_day
-        }
-
-        if (isValid) {
-          setState(() {
-            _appointmentDetails = appointmentData;
-            _isLoading = false;
-          });
-        } else {
-          setState(() {
-            _errorMessage = 'Lịch hẹn đã qua thời gian hợp lệ.';
-            _isLoading = false;
-          });
-        }
+        setState(() {
+          _appointmentDetails = appointmentData;
+          _isLoading = false;
+        });
       } else {
         setState(() {
           _errorMessage = 'Lỗi khi tải chi tiết lịch hẹn: ${response.statusCode}';
@@ -184,6 +147,43 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
       return DateFormat('dd/MM/yyyy').format(parsedDate);
     } catch (e) {
       return date;
+    }
+  }
+
+  // Check if appointment time has passed
+  bool _hasAppointmentTimePassed() {
+    final appointment = _appointmentDetails ?? widget.appointment;
+    final medicalDayStr = appointment['medical_day']?.toString();
+
+    if (medicalDayStr == null) return false;
+
+    try {
+      final now = DateTime.now();
+      final medicalDay = DateTime.parse(medicalDayStr);
+      final today = DateTime(now.year, now.month, now.day);
+      final appointmentDate = DateTime(medicalDay.year, medicalDay.month, medicalDay.day);
+
+      // If appointment is on a future date, it hasn't passed
+      if (appointmentDate.isAfter(today)) {
+        return false;
+      }
+
+      // If appointment is on a past date, it has passed
+      if (appointmentDate.isBefore(today)) {
+        return true;
+      }
+
+      // If appointment is today, check the time slot
+      final slot = appointment['slot'];
+      if (slot is int && slot >= 1 && slot <= 8) {
+        const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
+        final appointmentHour = timeSlots[slot - 1];
+        return now.hour >= appointmentHour;
+      }
+
+      return false;
+    } catch (e) {
+      return false;
     }
   }
 
@@ -472,72 +472,81 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
   }
 
   Widget _buildActionButtons() {
+    final hasTimePassed = _hasAppointmentTimePassed();
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: _isUpdating ? null : () => _updateStatus('CANCELLED'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: errorColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+        // Cancel button - only show if appointment time hasn't passed
+        if (!hasTimePassed)
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: _isUpdating ? null : () => _updateStatus('CANCELLED'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: errorColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 3,
               ),
-              elevation: 3,
-            ),
-            icon: _isUpdating
-                ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2,
-              ),
-            )
-                : const Icon(Icons.cancel, size: 20),
-            label: Text(
-              'CANCELLED',
-              style: GoogleFonts.lora(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: _isUpdating ? null : () => _updateStatus('CONFIRMED'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 3,
-            ),
-            icon: _isUpdating
-                ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2,
-              ),
-            )
-                : const Icon(Icons.check_circle, size: 20),
-            label: Text(
-              'CONFIRMED',
-              style: GoogleFonts.lora(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+              icon: _isUpdating
+                  ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+                  : const Icon(Icons.cancel, size: 20),
+              label: Text(
+                'CANCELLED',
+                style: GoogleFonts.lora(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
-        ),
+
+        // Add spacing only if both buttons are shown
+        if (!hasTimePassed && hasTimePassed) const SizedBox(width: 16),
+
+        // Confirm button - only show if appointment time has passed
+        if (hasTimePassed)
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: _isUpdating ? null : () => _updateStatus('CONFIRMED'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 3,
+              ),
+              icon: _isUpdating
+                  ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+                  : const Icon(Icons.check_circle, size: 20),
+              label: Text(
+                'CONFIRMED',
+                style: GoogleFonts.lora(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
