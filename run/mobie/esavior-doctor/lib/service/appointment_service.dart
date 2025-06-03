@@ -512,7 +512,7 @@ class OptimizedAppointmentService {
       Workmanager().registerPeriodicTask(
         'optimized-fetch-appointments',
         fetchAppointmentsTask,
-        frequency: Duration(hours: 1), // Reduced frequency
+        frequency: Duration(minutes: 20), // Reduced frequency
         initialDelay: Duration(minutes: 5),
         constraints: Constraints(
           networkType: NetworkType.connected,
