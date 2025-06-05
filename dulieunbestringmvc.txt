@@ -2,6 +2,23 @@ create database fpthealth
 use fpthealth
 
 
+-- Tạo bảng patients
+CREATE TABLE IF NOT EXISTS patients (
+    patient_id SERIAL PRIMARY KEY,
+    patient_name VARCHAR(100) NOT NULL,
+    patient_dob TIMESTAMP,
+    patient_email VARCHAR(100) UNIQUE,
+    patient_phone VARCHAR(20),
+    patient_address TEXT,
+    patient_password VARCHAR(255) NOT NULL,
+    patient_username VARCHAR(50) UNIQUE NOT NULL,
+    patient_gender VARCHAR(10) CHECK (patient_gender IN ('Male', 'Female', 'Other')),
+    patient_code VARCHAR(20) UNIQUE,
+    patient_img VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create table: departments
 CREATE TABLE departments (
     department_id INT PRIMARY KEY,

@@ -8,7 +8,7 @@ import java.util.List;
 public class Patients extends Entity<Integer> {
     private Integer patient_id;
     private String patient_name;
-    private LocalDateTime patient_dob; // Thay đổi kiểu dữ liệu từ Date sang LocalDate
+    private Date patient_dob; // Thay đổi kiểu dữ liệu từ Date sang LocalDate
     private String patient_email;
     private String patient_phone;
     private String patient_address;
@@ -39,11 +39,11 @@ public class Patients extends Entity<Integer> {
         this.patient_name = patient_name;
     }
 
-    public LocalDateTime getPatient_dob() {
+    public Date getPatient_dob() {
         return patient_dob;
     }
 
-    public void setPatient_dob(LocalDateTime patient_dob) {
+    public void setPatient_dob(Date patient_dob) {
         this.patient_dob = patient_dob;
     }
 

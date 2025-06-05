@@ -160,14 +160,23 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
     });
   }
 
-  Future<void> fetchAppointments() async {
+  Future<void> fetchAppointments({bool forceRefresh = false}) async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      final fetchedAppointments = await _appointmentService.fetchAppointments(_doctorId!);
+      List<Map<String, dynamic>> fetchedAppointments;
+
+      if (forceRefresh) {
+        // Force a fresh API call by calling the service method directly
+        fetchedAppointments = await _appointmentService.fetchAppointmentsWithRetry(_doctorId!);
+      } else {
+        // Use the normal fetch method which may use cache
+        fetchedAppointments = await _appointmentService.fetchAppointments(_doctorId!);
+      }
+
       setState(() {
         appointments = fetchedAppointments;
         _errorMessage = null;
@@ -183,7 +192,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
     }
   }
 
-  // Add refresh method with notification scheduling
+  // Add refresh method that forces API call
   Future<void> _refreshAppointments() async {
     if (_isRefreshing) return;
 
@@ -195,15 +204,24 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
       // Load notification settings first
       await _appointmentService.loadNotificationSettings();
 
-      // Refresh appointments and reschedule notifications
-      await _appointmentService.refreshAppointments(_doctorId!);
+      // Force refresh appointments with fresh API call
+      final fetchedAppointments = await _appointmentService.forceRefreshAppointments(_doctorId!);
 
-      // Fetch updated appointments
-      await fetchAppointments();
+      setState(() {
+        appointments = fetchedAppointments;
+        _errorMessage = null;
+      });
 
+      // Reschedule notifications with the new data
+      await _appointmentService.scheduleOptimizedNotifications(fetchedAppointments);
+
+      _showSnackBar('Đã cập nhật lịch hẹn thành công!', successColor);
 
     } catch (e) {
       _showSnackBar('Lỗi khi cập nhật: $e', errorColor);
+      setState(() {
+        _errorMessage = e.toString();
+      });
     } finally {
       setState(() {
         _isRefreshing = false;
@@ -268,31 +286,16 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
 
         switch (_currentFilter) {
           case FilterType.today:
-            if (!parsedMedicalDay.isAtSameMomentAs(todayStart)) {
-              return false;
-            }
-            final slot = a['slot'];
-            const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
-            if (slot is int && slot >= 1 && slot <= 8) {
-              final appointmentHour = timeSlots[slot - 1];
-              return appointmentHour > currentHour;
-            }
-            return false;
+          // Show all appointments for today regardless of time
+            final appointmentDate = DateTime(parsedMedicalDay.year, parsedMedicalDay.month, parsedMedicalDay.day);
+            final todayDate = DateTime(now.year, now.month, now.day);
+            return appointmentDate.isAtSameMomentAs(todayDate);
 
           case FilterType.thisMonth:
             if (parsedMedicalDay.isBefore(todayStart)) {
               return false;
             }
             if (parsedMedicalDay.year == now.year && parsedMedicalDay.month == now.month) {
-              if (parsedMedicalDay.isAtSameMomentAs(todayStart)) {
-                final slot = a['slot'];
-                const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
-                if (slot is int && slot >= 1 && slot <= 8) {
-                  final appointmentHour = timeSlots[slot - 1];
-                  return appointmentHour > currentHour;
-                }
-                return false;
-              }
               return true;
             }
             return false;
@@ -302,15 +305,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
               return false;
             }
             if (parsedMedicalDay.year == now.year) {
-              if (parsedMedicalDay.isAtSameMomentAs(todayStart)) {
-                final slot = a['slot'];
-                const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
-                if (slot is int && slot >= 1 && slot <= 8) {
-                  final appointmentHour = timeSlots[slot - 1];
-                  return appointmentHour > currentHour;
-                }
-                return false;
-              }
               return true;
             }
             return false;
@@ -790,34 +784,39 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.event_busy_outlined,
-              size: 64,
-              color: primaryColor,
-            ),
+    return SingleChildScrollView(
+      physics: AlwaysScrollableScrollPhysics(),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.event_busy_outlined,
+                  size: 64,
+                  color: primaryColor,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                _getEmptyMessage(),
+                style: GoogleFonts.lora(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          const SizedBox(height: 24),
-          Text(
-            _getEmptyMessage(),
-            style: GoogleFonts.lora(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: textColor,
-            ),
-            textAlign: TextAlign.center,
-          ),
-
-        ],
+        ),
       ),
     );
   }
@@ -937,11 +936,19 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                 ),
               )
                   : _errorMessage != null
-                  ? _buildErrorState()
+                  ? RefreshIndicator(
+                onRefresh: _refreshAppointments,
+                color: primaryColor,
+                child: _buildErrorState(),
+              )
                   : filteredAppointments.isEmpty
-                  ? _buildEmptyState()
+                  ? RefreshIndicator(
+                onRefresh: _refreshAppointments,
+                color: primaryColor,
+                child: _buildEmptyState(),
+              )
                   : RefreshIndicator(
-                onRefresh: _refreshAppointments, // Updated refresh method
+                onRefresh: _refreshAppointments,
                 color: primaryColor,
                 child: ListView.builder(
                   padding: const EdgeInsets.all(16),

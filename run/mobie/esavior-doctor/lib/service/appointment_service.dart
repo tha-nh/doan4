@@ -231,10 +231,11 @@ Future<void> _scheduleNotification(
   }
 }
 
-// Modified to filter all future appointments
+// Modified to filter appointments for today and in the future
 List<Map<String, dynamic>> _filterFutureAppointments(List<dynamic> appointments) {
   final result = <Map<String, dynamic>>[];
   final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day); // Start of today
 
   for (var appointment in appointments) {
     try {
@@ -244,8 +245,8 @@ List<Map<String, dynamic>> _filterFutureAppointments(List<dynamic> appointments)
 
       final appointmentTime = _getAppointmentDateTime(a);
 
-      // Include all future appointments
-      if (appointmentTime.isAfter(now)) {
+      // Include appointments from today onwards (not just future from current time)
+      if (appointmentTime.isAfter(today) || appointmentTime.isAtSameMomentAs(today)) {
         result.add(a);
       }
     } catch (e) {
@@ -296,25 +297,25 @@ class OptimizedAppointmentService {
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
   FlutterLocalNotificationsPlugin();
 
-  // Settings
+// Settings
   bool _notificationsEnabled = true;
   int _reminderMinutes = 15;
   bool _exactTimeNotification = true;
   bool _hasExactAlarmPermission = false;
 
-  // State
+// State
   bool _isBasicInitialized = false;
   bool _isUserInitialized = false;
   DateTime? _lastFetchTime;
 
-  // Getters
+// Getters
   bool get notificationsEnabled => _notificationsEnabled;
   int get reminderMinutes => _reminderMinutes;
   bool get exactTimeNotification => _exactTimeNotification;
   bool get isBasicInitialized => _isBasicInitialized;
   bool get isUserInitialized => _isUserInitialized;
 
-  // PHASE 1: Basic Services Initialization
+// PHASE 1: Basic Services Initialization
   Future<void> initializeBasicServices() async {
     if (_isBasicInitialized) {
       print('⚠️ Basic services already initialized');
@@ -343,7 +344,7 @@ class OptimizedAppointmentService {
     }
   }
 
-  // PHASE 2: User Services Initialization
+// PHASE 2: User Services Initialization
   Future<void> initializeUserServices(int doctorId) async {
     if (!_isBasicInitialized) {
       throw Exception('Basic services not initialized');
@@ -529,7 +530,7 @@ class OptimizedAppointmentService {
     }
   }
 
-  // Optimized appointment fetching with cache
+// Optimized appointment fetching with cache
   Future<List<Map<String, dynamic>>> fetchAppointments(int doctorId) async {
     try {
       // Check if we fetched recently (within 10 minutes)
@@ -561,12 +562,39 @@ class OptimizedAppointmentService {
     }
   }
 
+// NEW: Force refresh method that bypasses cache
+  Future<List<Map<String, dynamic>>> forceRefreshAppointments(int doctorId) async {
+    try {
+      print('🔄 Force refreshing appointments for doctor $doctorId');
+
+      // Clear cache timestamp to force fresh fetch
+      _lastFetchTime = null;
+
+      // Fetch fresh data directly from API
+      final appointments = await _fetchAppointmentsWithRetry(doctorId);
+      _lastFetchTime = DateTime.now();
+
+      print('✅ Force refresh completed with ${appointments.length} appointments');
+      return appointments;
+    } catch (e) {
+      print('❌ Force refresh appointments error: $e');
+      throw e;
+    }
+  }
+
+// Make this method public for direct access from UI
+  Future<List<Map<String, dynamic>>> fetchAppointmentsWithRetry(int doctorId) async {
+    return await _fetchAppointmentsWithRetry(doctorId);
+  }
+
   Future<List<Map<String, dynamic>>> _fetchAppointmentsWithRetry(int doctorId) async {
     const maxRetries = 3;
     const baseDelay = Duration(seconds: 2);
 
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
       try {
+        print('🌐 API call attempt $attempt for doctor $doctorId');
+
         final url = Uri.http('10.0.2.2:8081', '/api/v1/appointments/list', {
           'doctor_id': doctorId.toString(),
         });
@@ -577,9 +605,9 @@ class OptimizedAppointmentService {
           final allAppointments = jsonDecode(response.body) as List<dynamic>;
           print('📅 Fetched ${allAppointments.length} total appointments');
 
-          // Modified to filter all future appointments
-          final filteredAppointments = _filterFutureAppointments(allAppointments);
-          print('📅 Filtered to ${filteredAppointments.length} future appointments');
+          // Modified to include appointments from today onwards
+          final filteredAppointments = _filterTodayAndFutureAppointments(allAppointments);
+          print('📅 Filtered to ${filteredAppointments.length} appointments from today onwards');
 
           // Cache successful result
           await NotificationCacheManager.cacheAppointments(filteredAppointments);
@@ -603,10 +631,11 @@ class OptimizedAppointmentService {
     return [];
   }
 
-  // Modified to filter all future appointments
-  List<Map<String, dynamic>> _filterFutureAppointments(List<dynamic> appointments) {
+// NEW: Modified filtering method to include all appointments from today onwards
+  List<Map<String, dynamic>> _filterTodayAndFutureAppointments(List<dynamic> appointments) {
     final result = <Map<String, dynamic>>[];
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day); // Start of today
     const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
 
     for (var appointment in appointments) {
@@ -630,8 +659,11 @@ class OptimizedAppointmentService {
             appointmentHour,
           );
 
-          // Include all future appointments
-          if (appointmentTime.isAfter(now)) {
+          // Include appointments from today onwards (not filtered by current time)
+          if (appointmentTime.isAfter(today) ||
+              (appointmentTime.year == today.year &&
+                  appointmentTime.month == today.month &&
+                  appointmentTime.day == today.day)) {
             result.add(a);
           }
         }
@@ -648,6 +680,11 @@ class OptimizedAppointmentService {
     });
 
     return result;
+  }
+
+// Keep the old method for backwards compatibility but update it
+  List<Map<String, dynamic>> _filterFutureAppointments(List<dynamic> appointments) {
+    return _filterTodayAndFutureAppointments(appointments);
   }
 
   DateTime _getAppointmentDateTime(Map<String, dynamic> appointment) {
@@ -681,7 +718,7 @@ class OptimizedAppointmentService {
     return 'Not specified';
   }
 
-  // Optimized notification scheduling
+// Optimized notification scheduling
   Future<void> scheduleOptimizedNotifications(List<Map<String, dynamic>> appointments) async {
     if (!_notificationsEnabled) {
       print('🔕 Notifications disabled');
@@ -850,7 +887,7 @@ class OptimizedAppointmentService {
     }
   }
 
-  // Main refresh method
+// Main refresh method
   Future<void> refreshAppointments(int doctorId) async {
     try {
       print('🔄 Refreshing appointments for doctor $doctorId');
@@ -865,7 +902,7 @@ class OptimizedAppointmentService {
     }
   }
 
-  // Method to get pending notifications (for the viewer)
+// Method to get pending notifications (for the viewer)
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     try {
       return await _flutterLocalNotificationsPlugin.pendingNotificationRequests();
@@ -875,7 +912,7 @@ class OptimizedAppointmentService {
     }
   }
 
-  // Cleanup method
+// Cleanup method
   Future<void> cleanup() async {
     try {
       await cancelAllNotifications();
@@ -890,8 +927,6 @@ class OptimizedAppointmentService {
       print('❌ Cleanup error: $e');
     }
   }
-
-  // Add this method to the OptimizedAppointmentService class
 
 // Method to fetch past appointments
   Future<List<Map<String, dynamic>>> fetchPastAppointments(int doctorId) async {
