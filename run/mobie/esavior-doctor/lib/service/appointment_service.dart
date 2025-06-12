@@ -506,7 +506,7 @@ class OptimizedAppointmentService {
       // Initialize with optimized settings
       Workmanager().initialize(
         callbackDispatcher,
-        isInDebugMode: true, // Disable debug in production
+        isInDebugMode: false, // Disable debug in production
       );
 
       // Schedule periodic task with longer interval (1 hour)
@@ -931,6 +931,8 @@ class OptimizedAppointmentService {
 // Method to fetch past appointments
   Future<List<Map<String, dynamic>>> fetchPastAppointments(int doctorId) async {
     try {
+      print('🔄 Fetching past appointments for doctor $doctorId');
+
       final url = Uri.http('10.0.2.2:8081', '/api/v1/appointments/list', {
         'doctor_id': doctorId.toString(),
       });
@@ -941,7 +943,7 @@ class OptimizedAppointmentService {
         final allAppointments = jsonDecode(response.body) as List<dynamic>;
         print('📅 Fetched ${allAppointments.length} total appointments for past filter');
 
-        // Filter past appointments
+        // Filter past appointments (including earlier today)
         final pastAppointments = _filterPastAppointments(allAppointments);
         print('📅 Filtered to ${pastAppointments.length} past appointments');
 
@@ -965,7 +967,7 @@ class OptimizedAppointmentService {
       try {
         final Map<String, dynamic> a = Map<String, dynamic>.from(appointment);
 
-        // Include all statuses for past appointments (COMPLETED, CANCELLED, etc.)
+        // Include all statuses for past appointments (COMPLETED, CANCELLED, PENDING, etc.)
         final medicalDay = a['medical_day'];
         if (medicalDay == null) continue;
 
@@ -981,7 +983,7 @@ class OptimizedAppointmentService {
             appointmentHour,
           );
 
-          // Include appointments that have passed
+          // Include appointments that have passed (including earlier today)
           if (appointmentTime.isBefore(now)) {
             result.add(a);
           }
@@ -1001,3 +1003,4 @@ class OptimizedAppointmentService {
     return result;
   }
 }
+
