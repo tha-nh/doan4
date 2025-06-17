@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'google_signin_button.dart';
 
-const primaryColor = Color.fromARGB(255, 200, 50, 0);
+const primaryColor = Color(0xFF004B91);
 const whiteColor = Color.fromARGB(255, 255, 255, 255);
 const blackColor = Color.fromARGB(255, 0, 0, 0);
 const blueColor = Color.fromARGB(255, 33, 150, 233);
@@ -88,13 +88,12 @@ class _LoginState extends State<Login> {
         final data = json.decode(response.body);
         final int patientId = data['patient_id'];
 
-        // Lưu trạng thái đăng nhập vào SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setInt('patient_id', patientId);
-        await prefs.setBool('isLoggedIn', true);  // Đánh dấu rằng người dùng đã đăng nhập
+        await prefs.setBool('isLoggedIn', true);
         widget.onLogin(patientId);
         showTemporaryMessage(context, "Log in successfully!");
-        Navigator.pop(context);
+        Navigator.pushReplacementNamed(context, '/'); // Thay thế màn hình đăng nhập
       } else {
         showTemporaryMessage(context, "Invalid email address or password.");
       }
@@ -354,7 +353,7 @@ class _LoginState extends State<Login> {
             size: 25,
           ),
           onPressed: () {
-            Navigator.pop(context);
+            Navigator.pushReplacementNamed(context, '/');
           },
         ),
       ),
@@ -624,13 +623,10 @@ class _LoginState extends State<Login> {
               child: GoogleSignInButton(
                 onLoginSuccess: (patientName, patientId) async {
                   print('Logged in with Google: $patientName');
-
-                  // Lưu trạng thái đăng nhập Google vào SharedPreferences
                   SharedPreferences prefs = await SharedPreferences.getInstance();
                   await prefs.setInt('patient_id', int.parse(patientId));
-
                   widget.onLogin(int.parse(patientId));
-                  Navigator.pop(context);
+                  Navigator.pushReplacementNamed(context, '/'); // Thay thế màn hình
                 },
               ),
             )

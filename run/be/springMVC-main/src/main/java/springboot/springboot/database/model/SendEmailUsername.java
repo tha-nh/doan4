@@ -8,8 +8,8 @@ import java.util.Properties;
 public class SendEmailUsername {
 
     public void sendEmail(String name, String email, String passwordpatient) {
-        final String username = "thuddth2307004@fpt.edu.vn";
-        final String password = "kyxm zvbz nvsn uxxx";
+        final String username = "hongphuc0835@gmail.com";
+        final String password = "joia vkwu vppg pdvu";
         String subject = "Welcome to FPT Health";
         String body = "<html>" +
                 "<head>" +

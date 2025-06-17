@@ -1,0 +1,27 @@
+# Ignore Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+myenv/
+
+# IDE settings
+.idea/
+.vscode/
+
+# Model files and data
+*.pt
+*.keras
+*.h5
+*.ckpt
+*.onnx
+*.pb
+
+# CSV/Excel outputs
+*.csv
+*.xlsx
+
+# Environment variables
+.env*

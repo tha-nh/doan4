@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'google_signin_button.dart';
 
-const primaryColor = Color.fromARGB(255, 200, 50, 0);
+const primaryColor = Color(0xFF004B91);
 const whiteColor = Color.fromARGB(255, 255, 255, 255);
 const blackColor = Color.fromARGB(255, 0, 0, 0);
 const blueColor = Color.fromARGB(255, 33, 150, 233);
@@ -33,10 +33,16 @@ class _ProfileState extends State<Profile> {
   bool isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    fetchPatientData(); // Gọi ngay khi khởi tạo widget
+  }
+
+  @override
   void didUpdateWidget(Profile oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isLoggedIn != oldWidget.isLoggedIn) {
-      fetchPatientData();
+    if (widget.isLoggedIn != oldWidget.isLoggedIn || widget.patientId != oldWidget.patientId) {
+      fetchPatientData(); // Gọi lại khi isLoggedIn hoặc patientId thay đổi
     }
   }
 

@@ -6,7 +6,7 @@ import 'dart:math';
 
 
 
-const primaryColor = Color.fromARGB(255, 200, 50, 0);
+const primaryColor = Color(0xFF004B91);
 const whiteColor = Color.fromARGB(255, 255, 255, 255);
 const blackColor = Color.fromARGB(255, 0, 0, 0);
 const blueColor = Color.fromARGB(255, 33, 150, 233);
@@ -117,6 +117,13 @@ class _AppointmentState extends State<Appointment> {
   final FocusNode _departmentFocusNode = FocusNode();
   final GlobalKey _searchKey = GlobalKey();
 
+  TextEditingController doctorController = TextEditingController();
+  List filteredDoctors = [];
+  OverlayEntry? _doctorOverlayEntry;
+  final LayerLink _doctorLayerLink = LayerLink();
+  final FocusNode _doctorFocusNode = FocusNode();
+  final GlobalKey _doctorSearchKey = GlobalKey();
+
   // Danh sách các khung giờ
   List<Map<String, dynamic>> timeSlots = [
     {
@@ -173,9 +180,11 @@ class _AppointmentState extends State<Appointment> {
   void initState() {
     super.initState();
     fetchDepartments();
-    filteredDepartments = departments;
-
+    filteredDepartments = [];
+    filteredDoctors = [];
   }
+
+// Hàm hiển thị overlay cho Department với giao diện được cải tiến
   void _showDepartmentOverlay() {
     final renderBox = _searchKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
@@ -189,31 +198,48 @@ class _AppointmentState extends State<Appointment> {
     _departmentOverlayEntry = OverlayEntry(
       builder: (context) {
         return Positioned(
-          left: 0,                     // bắt đầu từ mép trái màn hình
-          top: position.dy + size.height ,  // bên dưới TextField
-          width: MediaQuery.of(context).size.width, // chiều cao TextField + padding
-            child: Material(
-              elevation: 4,
-              borderRadius: BorderRadius.circular(0),
-
-              color: Colors.white,           // background trắng
-
+          left: 16,                     // padding từ mép trái
+          right: 16,                    // padding từ mép phải
+          top: position.dy + size.height + 4,  // khoảng cách nhỏ dưới TextField
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(12),
+            shadowColor: Colors.black26,
+            color: Colors.white,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200, width: 1),
+              ),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 400),
-                child: ListView.builder(
-                  padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(maxHeight: 300),
+                child: filteredDepartments.isEmpty
+                    ? Container(
+                  padding: const EdgeInsets.all(16),
+                  child: const Text(
+                    'No departments found',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                )
+                    : ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   shrinkWrap: true,
                   itemCount: filteredDepartments.length,
+                  separatorBuilder: (context, index) => Divider(
+                    height: 1,
+                    thickness: 0.5,
+                    color: Colors.grey.shade200,
+                    indent: 16,
+                    endIndent: 16,
+                  ),
                   itemBuilder: (context, index) {
                     final dept = filteredDepartments[index];
-                    return ListTile(
-                      title: Text(
-                        dept['department_name'],
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold, // chữ in đậm trong list
-                          color: Colors.black,
-                        ),
-                      ),
+                    return InkWell(
                       onTap: () {
                         setState(() {
                           departmentController.text = dept['department_name'];
@@ -226,12 +252,47 @@ class _AppointmentState extends State<Appointment> {
                         _removeDepartmentOverlay();
                         _departmentFocusNode.unfocus();
                       },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: primaryColor.withOpacity(0.7),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                dept['department_name'],
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                            // Icon(
+                            //   Icons.arrow_forward_ios,
+                            //   size: 14,
+                            //   color: Colors.grey.shade400,
+                            // ),
+                          ],
+                        ),
+                      ),
                     );
                   },
                 ),
               ),
             ),
-
+          ),
         );
       },
     );
@@ -241,6 +302,161 @@ class _AppointmentState extends State<Appointment> {
   void _removeDepartmentOverlay() {
     _departmentOverlayEntry?.remove();
     _departmentOverlayEntry = null;
+  }
+
+// Hàm hiển thị overlay cho Doctor với giao diện được cải tiến
+  void _showDoctorOverlay() {
+    final renderBox = _doctorSearchKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final position = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+
+    if (_doctorOverlayEntry != null) {
+      _doctorOverlayEntry!.markNeedsBuild();
+      return;
+    }
+
+    _doctorOverlayEntry = OverlayEntry(
+      builder: (context) {
+        return Positioned(
+          left: 16,                     // padding từ mép trái
+          right: 16,                    // padding từ mép phải
+          top: position.dy + size.height + 4,  // khoảng cách nhỏ dưới TextField
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(12),
+            shadowColor: Colors.black26,
+            color: Colors.white,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200, width: 1),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 300),
+                child: filteredDoctors.isEmpty
+                    ? Container(
+                  padding: const EdgeInsets.all(16),
+                  child: const Text(
+                    'No doctors found',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                )
+                    : ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shrinkWrap: true,
+                  itemCount: filteredDoctors.length,
+                  separatorBuilder: (context, index) => Divider(
+                    height: 1,
+                    thickness: 0.5,
+                    color: Colors.grey.shade200,
+                    indent: 16,
+                    endIndent: 16,
+                  ),
+                  itemBuilder: (context, index) {
+                    final doctor = filteredDoctors[index];
+                    return InkWell(
+                      onTap: () {
+                        setState(() {
+                          doctorController.text = doctor['doctor_name'];
+                          selectedDoctor = doctor['doctor_id'].toString();
+                          filteredDoctors = [];
+                        });
+                        _removeDoctorOverlay();
+                        _doctorFocusNode.unfocus();
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: primaryColor.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.person,
+                                color: primaryColor,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    doctor['doctor_name'],
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Dr. ${doctor['doctor_name'].split(' ').last}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.green.shade200,
+                                  width: 0.5,
+                                ),
+                              ),
+                              child: Text(
+                                'Available',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.green.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    Overlay.of(context)?.insert(_doctorOverlayEntry!);
+  }
+
+  void _removeDoctorOverlay() {
+    _doctorOverlayEntry?.remove();
+    _doctorOverlayEntry = null;
   }
 
   String generatePassword() {
@@ -504,7 +720,7 @@ class _AppointmentState extends State<Appointment> {
           margin: const EdgeInsets.only(top: 20),
           alignment: Alignment.center,
           child: const Text(
-            'Select ',
+            'Select',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -514,6 +730,7 @@ class _AppointmentState extends State<Appointment> {
         ),
         const SizedBox(height: 20),
 
+        // Department Search Field
         Container(
           key: _searchKey,
           margin: const EdgeInsets.only(top: 20.0),
@@ -543,7 +760,7 @@ class _AppointmentState extends State<Appointment> {
                               .contains(value.toLowerCase());
                         }).toList();
 
-                        if (filteredDepartments.isNotEmpty) {
+                        if (filteredDepartments.isNotEmpty && value.isNotEmpty) {
                           _showDepartmentOverlay();
                         } else {
                           _removeDepartmentOverlay();
@@ -551,6 +768,9 @@ class _AppointmentState extends State<Appointment> {
                       });
                     },
                     onTap: () {
+                      setState(() {
+                        filteredDepartments = departments;
+                      });
                       if (filteredDepartments.isNotEmpty) {
                         _showDepartmentOverlay();
                       }
@@ -569,69 +789,89 @@ class _AppointmentState extends State<Appointment> {
           ),
         ),
 
-
-
-
+        // Doctor Search Field
         Container(
-          width: double.infinity,
+          key: _doctorSearchKey,
           margin: const EdgeInsets.only(top: 20.0),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(
-              color: Colors.black54,
-              width: 1.0,
-            ),
+            border: Border.all(color: Colors.black54, width: 1.0),
           ),
-          child: DropdownButtonFormField<String>(
-            dropdownColor: whiteColor,
-            value: selectedDoctor,
-            hint: isLoadingDoctor
-                ? const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+          child: CompositedTransformTarget(
+            link: _doctorLayerLink,
+            child: Row(
               children: [
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                Expanded(
+                  child: TextField(
+                    focusNode: _doctorFocusNode,
+                    controller: doctorController,
+                    enabled: selectedDepartment != null,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        filteredDoctors = doctors.where((doctor) {
+                          return doctor['doctor_name']
+                              .toLowerCase()
+                              .contains(value.toLowerCase());
+                        }).toList();
+
+                        if (filteredDoctors.isNotEmpty && value.isNotEmpty) {
+                          _showDoctorOverlay();
+                        } else {
+                          _removeDoctorOverlay();
+                        }
+                      });
+                    },
+                    onTap: () {
+                      if (selectedDepartment == null) {
+                        showTemporaryMessage(context, "Please select a department first!");
+                        return;
+                      }
+                      setState(() {
+                        filteredDoctors = doctors;
+                      });
+                      if (filteredDoctors.isNotEmpty) {
+                        _showDoctorOverlay();
+                      }
+                    },
+                    decoration: InputDecoration(
+                      hintText: selectedDepartment == null
+                          ? 'Select Department First'
+                          : isLoadingDoctor
+                          ? 'Loading Doctors...'
+                          : 'Select Doctor',
+                      hintStyle: TextStyle(
+                        color: selectedDepartment == null ? Colors.red : Colors.black54,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                   ),
                 ),
+                if (isLoadingDoctor)
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                    ),
+                  )
+                else
+                  const Icon(Icons.arrow_drop_down, color: Colors.black54),
               ],
-            )
-                : const Text(
-              'Select Doctor',
-              style: TextStyle(
-                  color: Colors.black54,
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.bold),
             ),
-            onChanged: (value) {
-              setState(() {
-                selectedDoctor = value;
-              });
-            },
-            items: doctors.map<DropdownMenuItem<String>>((doctor) {
-              return DropdownMenuItem<String>(
-                value: doctor['doctor_id'].toString(),
-                child: Text(
-                  doctor['doctor_name'],
-                  style: const TextStyle(
-                      color: blackColor,
-                      fontSize: 16.0,
-                      fontWeight: FontWeight.bold),
-                ),
-              );
-            }).toList(),
-            decoration: const InputDecoration(
-              contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
-              border: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              enabledBorder: InputBorder.none,
-            ),
-            menuMaxHeight: 200, // Giới hạn chiều cao
           ),
         ),
+
+        // Date Selection
         Container(
           width: double.infinity,
           margin: const EdgeInsets.only(top: 20.0),
@@ -658,7 +898,7 @@ class _AppointmentState extends State<Appointment> {
                         primaryColor: primaryColor,
                         hintColor: primaryColor,
                         colorScheme:
-                            const ColorScheme.light(primary: primaryColor),
+                        const ColorScheme.light(primary: primaryColor),
                         buttonTheme: const ButtonThemeData(
                             textTheme: ButtonTextTheme.primary),
                       ),
@@ -680,7 +920,7 @@ class _AppointmentState extends State<Appointment> {
             },
             child: Padding(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+              const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -699,18 +939,22 @@ class _AppointmentState extends State<Appointment> {
             ),
           ),
         ),
+
+        // Time Slots
         if (isDateSelected)
           isLoadingSlots
               ? Center(
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 20),
-                    child: const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
-                    ),
-                  ),
-                )
+            child: Container(
+              margin: const EdgeInsets.only(top: 20),
+              child: const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+              ),
+            ),
+          )
               : buildTimeSlots(),
         const SizedBox(height: 20),
+
+        // Next Step Button
         Container(
           width: double.infinity,
           margin: const EdgeInsets.only(top: 20),
@@ -1291,8 +1535,11 @@ class _AppointmentState extends State<Appointment> {
   void dispose() {
     _timer?.cancel();
     _removeDepartmentOverlay();
+    _removeDoctorOverlay();
     _departmentFocusNode.dispose();
+    _doctorFocusNode.dispose();
     departmentController.dispose();
+    doctorController.dispose();
     super.dispose();
   }
 

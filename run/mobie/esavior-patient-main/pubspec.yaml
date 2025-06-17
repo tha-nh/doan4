@@ -35,7 +35,7 @@ dev_dependencies:
   flutter_launcher_icons: ^0.10.0
 flutter:
   uses-material-design: true
-
-  # Thêm assets vào đây
   assets:
-    - assets/images/
+    - assets/images/google_logo.png
+    - assets/images/esavior-high-resolution-logo-transparent.png
+    - assets/images/3824251.jpg!w700wp

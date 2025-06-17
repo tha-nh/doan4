@@ -17,7 +17,7 @@ import 'package:esavior_project/screens/profile.dart';
 import 'package:esavior_project/screens/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const primaryColor = Color.fromARGB(255, 200, 50, 0);
+const primaryColor = Color(0xFF004B91);
 const whiteColor = Color.fromARGB(255, 255, 255, 255);
 const blackColor = Color.fromARGB(255, 0, 0, 0);
 
@@ -38,24 +38,30 @@ class _MyAppState extends State<MyApp> {
   int _selectedIndex = 0;
   bool _showExtraButtons = false;
 
-  void handleLogin(BuildContext context, int patientId) {
-    setState(() {
-      isLoggedIn = true;
-      this.patientId = patientId;
-    });
+  Future<void> handleLogin(BuildContext context, int patientId) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int? storedPatientId = prefs.getInt('patient_id');
+
+    storedPatientId = patientId;
+    if (mounted) {
+      setState(() {
+        isLoggedIn = true;
+        this.patientId = patientId;
+      });
+      Navigator.pushReplacementNamed(context, '/');
+    }
   }
+
   void checkLoginStatus() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     int? storedPatientId = prefs.getInt('patient_id');
 
     if (storedPatientId != null) {
-      // Đã đăng nhập trước đó
       setState(() {
         isLoggedIn = true;
         patientId = storedPatientId;
       });
     } else {
-      // Chưa đăng nhập
       setState(() {
         isLoggedIn = false;
         patientId = null;
@@ -66,34 +72,29 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    checkLoginStatus();  // Kiểm tra trạng thái đăng nhập khi ứng dụng khởi động
+    checkLoginStatus();
   }
 
   void handleLogout(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedIn', false);
-    await prefs.remove('patient_id');  // Xóa luôn patient_id để chắc chắn
+    await prefs.remove('patient_id');
     setState(() {
       isLoggedIn = false;
       patientId = null;
     });
   }
 
-
   void _onItemTapped(int index) {
     setState(() {
       if (index == 3) {
-        // Booking: toggle extra buttons
         _showExtraButtons = !_showExtraButtons;
       } else {
-        // Các tab còn lại: chỉ chuyển trang và ẩn extra buttons
         _selectedIndex = index;
         _showExtraButtons = false;
       }
     });
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -101,48 +102,48 @@ class _MyAppState extends State<MyApp> {
       initialRoute: '/',
       routes: {
         '/login': (context) => Login(
-              onLogin: (int patientId) => handleLogin(context, patientId),
-            ),
+          onLogin: (int patientId) => handleLogin(context, patientId),
+        ),
         '/user': (context) => User(
-              isLoggedIn: isLoggedIn,
-              onLogout: () => handleLogout(context),
-              patientId: patientId,
-            ),
+          isLoggedIn: isLoggedIn,
+          onLogout: () => handleLogout(context),
+          patientId: patientId,
+        ),
         '/about': (context) => About(
-              isLoggedIn: isLoggedIn,
-              onLogout: () => handleLogout(context),
-              patientId: patientId,
-            ),
+          isLoggedIn: isLoggedIn,
+          onLogout: () => handleLogout(context),
+          patientId: patientId,
+        ),
         '/feedback': (context) => ServicesFeedback(
           isLoggedIn: isLoggedIn,
           onLogout: () => handleLogout(context),
           patientId: patientId,
         ),
         '/library': (context) => Library(
-              isLoggedIn: isLoggedIn,
-              onLogout: () => handleLogout(context),
-              patientId: patientId,
-            ),
+          isLoggedIn: isLoggedIn,
+          onLogout: () => handleLogout(context),
+          patientId: patientId,
+        ),
         '/appointment_list': (context) => AppointmentList(
-              isLoggedIn: isLoggedIn,
-              onLogout: () => handleLogout(context),
-              patientId: patientId,
-            ),
+          isLoggedIn: isLoggedIn,
+          onLogout: () => handleLogout(context),
+          patientId: patientId,
+        ),
         '/medical_records': (context) => MedicalRecords(
-              isLoggedIn: isLoggedIn,
-              onLogout: () => handleLogout(context),
-              patientId: patientId,
-            ),
+          isLoggedIn: isLoggedIn,
+          onLogout: () => handleLogout(context),
+          patientId: patientId,
+        ),
         '/booked_list': (context) => BookedList(
-              isLoggedIn: isLoggedIn,
-              onLogout: () => handleLogout(context),
-              patientId: patientId,
-            ),
+          isLoggedIn: isLoggedIn,
+          onLogout: () => handleLogout(context),
+          patientId: patientId,
+        ),
         '/change_password': (context) => ChangePassword(
-              isLoggedIn: isLoggedIn,
-              onLogout: () => handleLogout(context),
-              patientId: patientId,
-            ),
+          isLoggedIn: isLoggedIn,
+          onLogout: () => handleLogout(context),
+          patientId: patientId,
+        ),
         '/emergency_booking': (context) => EmergencyBooking(),
         '/nonEmergency_booking': (context) => NonEmergencyBooking(),
       },
@@ -151,7 +152,8 @@ class _MyAppState extends State<MyApp> {
         primarySwatch: Colors.red,
         fontFamily: 'Nunito',
       ),
-      home: Scaffold(
+      home: isLoggedIn
+          ? Scaffold(
         resizeToAvoidBottomInset: false,
         backgroundColor: whiteColor,
         body: IndexedStack(
@@ -177,7 +179,7 @@ class _MyAppState extends State<MyApp> {
               ),
             ),
             Builder(
-              builder: (context) => Appointment( // Medical -> Appointment
+              builder: (context) => Appointment(
                 isLoggedIn: isLoggedIn,
                 onLogout: () => handleLogout(context),
                 patientId: patientId,
@@ -189,7 +191,7 @@ class _MyAppState extends State<MyApp> {
               ),
             ),
             Builder(
-              builder: (context) => const Booking(), // Booking -> show buttons
+              builder: (context) => const Booking(),
             ),
             Builder(
               builder: (context) => Profile(
@@ -205,8 +207,6 @@ class _MyAppState extends State<MyApp> {
             ),
           ],
         ),
-
-
         bottomNavigationBar: BottomNavigationBar(
           backgroundColor: whiteColor,
           items: const <BottomNavigationBarItem>[
@@ -219,11 +219,11 @@ class _MyAppState extends State<MyApp> {
               label: 'Diagnosis',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_month), // Đổi chỗ Medical
+              icon: Icon(Icons.calendar_month),
               label: 'Medical',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.car_crash), // Đổi chỗ Booking
+              icon: Icon(Icons.car_crash),
               label: 'Booking',
             ),
             BottomNavigationBarItem(
@@ -256,18 +256,21 @@ class _MyAppState extends State<MyApp> {
                         });
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 255, 0, 0),
+                        backgroundColor: primaryColor,
+                        foregroundColor: whiteColor,
                         padding: const EdgeInsets.symmetric(
                             vertical: 16.0, horizontal: 32.0),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15.0),
                         ),
                       ),
-                      child: const Text('Emergency Booking',
-                          style: TextStyle(
-                              fontSize: 16.0,
-                              color: whiteColor,
-                              fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Emergency Booking',
+                        style: TextStyle(
+                            fontSize: 16.0,
+                            color: whiteColor,
+                            fontWeight: FontWeight.bold),
+                      ),
                     );
                   },
                 ),
@@ -279,27 +282,29 @@ class _MyAppState extends State<MyApp> {
                   builder: (BuildContext newContext) {
                     return ElevatedButton(
                       onPressed: () {
-                        Navigator.pushNamed(
-                            newContext, '/nonEmergency_booking');
+                        Navigator.pushNamed(newContext, '/nonEmergency_booking');
                         setState(() {
                           _showExtraButtons = !_showExtraButtons;
                         });
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: whiteColor,
+                        foregroundColor: primaryColor,
                         padding: const EdgeInsets.symmetric(
                             vertical: 16.0, horizontal: 32.0),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15.0),
-                            side: const BorderSide(
-                                color: const Color.fromARGB(255, 255, 0, 0),
-                                width: 0.5)),
+                            side: BorderSide(
+                                color: primaryColor,
+                                width: 1.0)),
                       ),
-                      child: const Text('Non-Urgent Booking',
-                          style: TextStyle(
-                              fontSize: 16.0,
-                              color: const Color.fromARGB(255, 255, 0, 0),
-                              fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Non-Urgent Booking',
+                        style: TextStyle(
+                            fontSize: 16.0,
+                            color: primaryColor,
+                            fontWeight: FontWeight.bold),
+                      ),
                     );
                   },
                 ),
@@ -307,21 +312,18 @@ class _MyAppState extends State<MyApp> {
             FloatingActionButton(
               onPressed: () {
                 setState(() {
-                  _selectedIndex = 2; // Index của trang Appointment (Medical)
-                  _showExtraButtons = false; // Không hiện các nút phụ
+                  _selectedIndex = 2;
+                  _showExtraButtons = false;
                 });
               },
               backgroundColor: primaryColor,
               child: const Icon(Icons.local_hospital, color: whiteColor, size: 30),
             ),
-
-
-
-
             if (_showExtraButtons) const SizedBox(height: 30)
           ],
         ),
-      ),
+      )
+          : Login(onLogin: (int patientId) => handleLogin(context, patientId)),
     );
   }
 }
