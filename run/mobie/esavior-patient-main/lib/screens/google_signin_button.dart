@@ -76,7 +76,7 @@ class GoogleSignInButton extends StatelessWidget {
 
   String _generateRandomPassword() {
     // Hàm này sẽ tạo một mật khẩu ngẫu nhiên
-    return 'RandomPassword123'; // Thay bằng logic tạo mật khẩu ngẫu nhiên thực tế nếu cần
+    return 'Password123@!'; // Thay bằng logic tạo mật khẩu ngẫu nhiên thực tế nếu cần
   }
 
   @override

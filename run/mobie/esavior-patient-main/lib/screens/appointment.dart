@@ -6,7 +6,7 @@ import 'dart:math';
 
 
 
-const primaryColor = Color(0xFF004B91);
+const primaryColor = Colors.blue;
 const whiteColor = Color.fromARGB(255, 255, 255, 255);
 const blackColor = Color.fromARGB(255, 0, 0, 0);
 const blueColor = Color.fromARGB(255, 33, 150, 233);

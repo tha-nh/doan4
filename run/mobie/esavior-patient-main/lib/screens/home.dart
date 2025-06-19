@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'doctor_details.dart';
 
-const primaryColor = Color(0xFF004B91);
+const primaryColor = Colors.blue;
 const whiteColor = Color.fromARGB(255, 255, 255, 255);
 const blackColor = Color.fromARGB(255, 0, 0, 0);
 const blueColor = Color.fromARGB(255, 33, 150, 233);
@@ -139,10 +139,10 @@ class _HomeState extends State<Home> {
             children: [
               Container(
                 width: double.infinity,
-                height: 250,
+                height: 350,
                 decoration: const BoxDecoration(
                   image: DecorationImage(
-                    image: AssetImage('assets/images/3824251.jpg!w700wp'),
+                    image: AssetImage('assets/images/banner.png'),
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -234,14 +234,7 @@ class _HomeState extends State<Home> {
                         : const SizedBox(
                       height: 1,
                     ),
-                    if (isSuccessBooked)
-                      const Text(
-                        "Emergency ambulance is on the way!",
-                        style: TextStyle(
-                            color: Color.fromARGB(255, 255, 0, 0),
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold),
-                      ),
+
                     Container(
                       width: double.infinity,
                       margin: const EdgeInsets.only(top: 20),

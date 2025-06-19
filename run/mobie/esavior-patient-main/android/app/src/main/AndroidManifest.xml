@@ -14,7 +14,7 @@
     <application
         android:label="eSavior"
         android:name="${applicationName}"
-        android:icon="@mipmap/esavior">
+        android:icon="@mipmap/ic_launcher">
 
         <!-- Thêm thông tin Client ID của bạn từ Google Cloud -->
         <meta-data

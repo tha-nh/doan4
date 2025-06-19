@@ -32,10 +32,15 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  flutter_launcher_icons: ^0.10.0
+  flutter_launcher_icons: ^0.13.1
 flutter:
   uses-material-design: true
   assets:
     - assets/images/google_logo.png
-    - assets/images/esavior-high-resolution-logo-transparent.png
-    - assets/images/3824251.jpg!w700wp
+    - assets/images/esavior.png
+    - assets/images/banner.png
+flutter_icons:
+  android: true                    # ← THIẾU DÒNG NÀY
+  image_path: "assets/images/esavior.png"
+  adaptive_icon_background: "#FFFFFF"           # ← Không có "android_" prefix
+  adaptive_icon_foreground: "assets/images/esavior.png"

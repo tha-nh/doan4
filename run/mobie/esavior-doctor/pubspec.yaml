@@ -58,7 +58,9 @@ dev_dependencies:
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/esavior-high-resolution-logo-transparent.png"
+  image_path: "assets/esavior2.png"
+  adaptive_icon_background: "#FFFFFF"           # ← Không có "android_" prefix
+  adaptive_icon_foreground: "assets/esavior2.png"
 #  flutter pub get
 #  flutter pub run flutter_launcher_icons:main
 
