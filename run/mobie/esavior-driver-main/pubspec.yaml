@@ -27,8 +27,7 @@ dependencies:
   cloud_firestore: any
   firebase_database: any
   shared_preferences: any
-  workmanager:
-    path: C:\Boss\GitHub\doan4\flutter_workmanager-main\workmanager
+  workmanager: ^0.6.0
   flutter_local_notifications: any
   web_socket_channel: any
 dev_dependencies:
@@ -67,3 +66,7 @@ flutter:
 #    - assets/images/library/img-detail3-3.png
 #    - assets/images/library/img-detail4-1.png
 #    - assets/images/library/img-detail4-2.png
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/esavior-high-resolution-logo-transparent.png"

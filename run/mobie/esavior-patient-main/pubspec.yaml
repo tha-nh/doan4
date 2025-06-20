@@ -42,5 +42,3 @@ flutter:
 flutter_icons:
   android: true                    # ← THIẾU DÒNG NÀY
   image_path: "assets/images/esavior.png"
-  adaptive_icon_background: "#FFFFFF"           # ← Không có "android_" prefix
-  adaptive_icon_foreground: "assets/images/esavior.png"
