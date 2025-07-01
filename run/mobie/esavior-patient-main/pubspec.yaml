@@ -39,6 +39,7 @@ flutter:
     - assets/images/google_logo.png
     - assets/images/esavior.png
     - assets/images/banner.png
+    - assets/images/esavior-high-resolution-logo-transparent.png
 flutter_icons:
   android: true                    # ← THIẾU DÒNG NÀY
   image_path: "assets/images/esavior.png"

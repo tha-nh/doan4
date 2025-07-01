@@ -1,0 +1,2 @@
+C:/Users/Nguyen/Documents/GitHub/bes4/bes4/esavior-patient-main/android/app/.cxx/RelWithDebInfo/4u546c40/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/Nguyen/Documents/GitHub/bes4/bes4/esavior-patient-main/android/app/.cxx/RelWithDebInfo/4u546c40/x86_64/CMakeFiles/rebuild_cache.dir

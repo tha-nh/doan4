@@ -33,9 +33,9 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool isLoggedIn = false;
+  bool isLoggedIn = true; // Đặt mặc định là true để bỏ qua login
   bool isLoading = true;
-  int? patientId;
+  int? patientId = 1; // Đặt patientId mặc định
   int _selectedIndex = 0;
   bool _showExtraButtons = false;
 
@@ -55,21 +55,14 @@ class _MyAppState extends State<MyApp> {
   }
 
   void checkLoginStatus() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool? storedIsLoggedIn = prefs.getBool('isLoggedIn');
-    int? storedPatientId = prefs.getInt('patient_id');
+    // Bỏ qua việc kiểm tra SharedPreferences, luôn đặt là đã đăng nhập
 
     // Thêm delay để hiển thị loading screen
     await Future.delayed(const Duration(seconds: 2));
 
     setState(() {
-      if (storedIsLoggedIn == true && storedPatientId != null) {
-        isLoggedIn = true;
-        patientId = storedPatientId;
-      } else {
-        isLoggedIn = false;
-        patientId = null;
-      }
+      isLoggedIn = true; // Luôn đặt là true
+      patientId = 1; // Đặt patientId mặc định
       isLoading = false;
     });
   }
@@ -384,9 +377,7 @@ class _MyAppState extends State<MyApp> {
       ),
       home: isLoading
           ? _buildLoadingScreen()
-          : isLoggedIn
-          ? _buildMainApp()
-          : Login(onLogin: (int patientId) => handleLogin(context, patientId)),
+          : _buildMainApp(), // Bỏ điều kiện kiểm tra isLoggedIn
     );
   }
 

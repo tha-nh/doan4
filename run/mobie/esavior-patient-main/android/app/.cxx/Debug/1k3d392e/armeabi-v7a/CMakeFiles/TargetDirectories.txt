@@ -1,0 +1,2 @@
+C:/Users/Nguyen/Documents/GitHub/bes4/bes4/esavior-patient-main/android/app/.cxx/Debug/1k3d392e/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/Nguyen/Documents/GitHub/bes4/bes4/esavior-patient-main/android/app/.cxx/Debug/1k3d392e/armeabi-v7a/CMakeFiles/rebuild_cache.dir
