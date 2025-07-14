@@ -12,7 +12,7 @@ import '../screens/settings_screen.dart'; // Add settings import
 import 'appointment_details_screen.dart';
 import 'dart:math' as math;
 
-// Enum để định nghĩa các loại filter
+// Enum to define filter types
 enum FilterType { today, thisMonth, thisYear }
 
 class AppointmentsScreen extends StatefulWidget {
@@ -109,11 +109,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
 
   Future<void> _initializeDateFormatting() async {
     try {
-      await initializeDateFormatting('vi', null);
+      await initializeDateFormatting('en', null);
       _isLocaleInitialized = true;
-      // print('Đã khởi tạo locale tiếng Việt thành công');
+      // print('Successfully initialized Vietnamese locale');
     } catch (e) {
-      // print('Lỗi khi khởi tạo locale: $e');
+      // print('Error initializing locale: $e');
       _isLocaleInitialized = false;
     }
   }
@@ -215,10 +215,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
       // Reschedule notifications with the new data
       await _appointmentService.scheduleOptimizedNotifications(fetchedAppointments);
 
-      _showSnackBar('Đã cập nhật lịch hẹn thành công!', successColor);
+      _showSnackBar('Successfully updated appointments!', successColor);
 
     } catch (e) {
-      _showSnackBar('Lỗi khi cập nhật: $e', errorColor);
+      _showSnackBar('Error updating: $e', errorColor);
       setState(() {
         _errorMessage = e.toString();
       });
@@ -244,7 +244,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
   }
 
   String _formatDateVerbose(String? date) {
-    if (date == null) return 'Chưa xác định';
+    if (date == null) return 'Not specified';
     try {
       final parsedDate = DateTime.parse(date);
       final now = DateTime.now();
@@ -253,12 +253,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
       final appointmentDate = DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
 
       if (appointmentDate.isAtSameMomentAs(today)) {
-        return 'Hôm nay';
+        return 'Today';
       } else if (appointmentDate.isAtSameMomentAs(tomorrow)) {
-        return 'Ngày mai';
+        return 'Tomorrow';
       } else {
         if (_isLocaleInitialized) {
-          return DateFormat('EEEE, dd/MM/yyyy', 'vi').format(parsedDate);
+          return DateFormat('EEEE, dd/MM/yyyy', 'en').format(parsedDate);
         } else {
           return DateFormat('dd/MM/yyyy').format(parsedDate);
         }
@@ -357,9 +357,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Lịch Khám Bệnh',
+                              'Appointment Schedule',
                               style: GoogleFonts.lora(
-                                fontSize: 24,
+                                fontSize: 18,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
                               ),
@@ -367,7 +367,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                             const SizedBox(height: 4),
                             Text(
                               _isLocaleInitialized
-                                  ? DateFormat('EEEE, dd MMMM yyyy', 'vi').format(DateTime.now())
+                                  ? DateFormat('EEEE, dd MMMM yyyy', 'en').format(DateTime.now())
                                   : DateFormat('dd/MM/yyyy').format(DateTime.now()),
                               style: GoogleFonts.lora(
                                 fontSize: 14,
@@ -430,13 +430,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                               ),
                             ),
                           ),
-
-
                         ],
                       ),
                     ],
                   ),
-
                 ],
               ),
             ),
@@ -445,7 +442,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
       ),
     );
   }
-
 
   Widget _buildFilterButtons() {
     return AnimatedBuilder(
@@ -462,7 +458,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                 children: [
                   Expanded(
                     child: _buildFilterButton(
-                      'Hôm nay',
+                      'Today',
                       FilterType.today,
                       Icons.today_outlined,
                     ),
@@ -470,7 +466,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                   const SizedBox(width: 8),
                   Expanded(
                     child: _buildFilterButton(
-                      'Tháng này',
+                      'This Month',
                       FilterType.thisMonth,
                       Icons.calendar_month_outlined,
                     ),
@@ -478,7 +474,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                   const SizedBox(width: 8),
                   Expanded(
                     child: _buildFilterButton(
-                      'Năm này',
+                      'This Year',
                       FilterType.thisYear,
                       Icons.calendar_today_outlined,
                     ),
@@ -533,48 +529,26 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
 
     final patientList = appointmentData['patient'] as List<dynamic>?;
     final patientName = patientList != null && patientList.isNotEmpty
-        ? (patientList[0] as Map<String, dynamic>)['patient_name']?.toString() ?? 'Bệnh nhân ID: ${appointmentData['patient_id']}'
-        : 'Bệnh nhân ID: ${appointmentData['patient_id'] ?? 'Không xác định'}';
+        ? (patientList[0] as Map<String, dynamic>)['patient_name']?.toString() ?? 'Patient ID: ${appointmentData['patient_id']}'
+        : 'Patient ID: ${appointmentData['patient_id'] ?? 'Unknown'}';
 
     final timeSlot = _appointmentService.getTimeSlot(appointmentData['slot']);
     final appointmentDate = _formatDateVerbose(appointmentData['medical_day']?.toString());
+    final status = appointmentData['status']?.toString() ?? '';
 
-    String timeUntilText = '';
-    Color urgencyColor = primaryColor;
-
-    try {
-      final medicalDay = appointmentData['medical_day'];
-      if (medicalDay != null) {
-        final parsedDate = DateTime.parse(medicalDay.toString());
-        final slot = appointmentData['slot'];
-        const timeSlots = [8, 9, 10, 11, 13, 14, 15, 16];
-        if (slot is int && slot >= 1 && slot <= 8) {
-          final appointmentHour = timeSlots[slot - 1];
-          final appointmentTime = DateTime(
-            parsedDate.year,
-            parsedDate.month,
-            parsedDate.day,
-            appointmentHour,
-          );
-          final now = DateTime.now();
-          final difference = appointmentTime.difference(now);
-
-          if (difference.inMinutes > 0) {
-            if (difference.inHours < 1) {
-              timeUntilText = 'Còn ${difference.inMinutes} phút';
-              urgencyColor = errorColor;
-            } else if (difference.inHours < 24) {
-              timeUntilText = 'Còn ${difference.inHours} giờ';
-              urgencyColor = accentColor;
-            } else {
-              timeUntilText = 'Còn ${difference.inDays} ngày';
-              urgencyColor = successColor;
-            }
-          }
-        }
-      }
-    } catch (e) {
-      // Handle parsing error silently
+    Color statusColor;
+    switch (status) {
+      case 'PENDING':
+        statusColor = accentColor;
+        break;
+      case 'CANCELLED':
+        statusColor = errorColor;
+        break;
+      case 'COMPLETED':
+        statusColor = successColor;
+        break;
+      default:
+        statusColor = textSecondaryColor;
     }
 
     return AnimatedBuilder(
@@ -669,38 +643,29 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'ID: ${appointmentData['patient_id']}',
-                                    style: GoogleFonts.lora(
-                                      fontSize: 12,
-                                      color: textSecondaryColor,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
+
                                 ],
                               ),
                             ),
-                            if (timeUntilText.isNotEmpty)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: urgencyColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: urgencyColor.withOpacity(0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  timeUntilText,
-                                  style: GoogleFonts.lora(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: urgencyColor,
-                                  ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: statusColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: statusColor.withOpacity(0.3),
+                                  width: 1,
                                 ),
                               ),
+                              child: Text(
+                                status,
+                                style: GoogleFonts.lora(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: statusColor,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 16),
@@ -715,7 +680,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                               Expanded(
                                 child: _buildInfoItem(
                                   Icons.calendar_today,
-                                  'Ngày khám',
+                                  'Appointment Date',
                                   appointmentDate,
                                 ),
                               ),
@@ -728,7 +693,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                               Expanded(
                                 child: _buildInfoItem(
                                   Icons.access_time,
-                                  'Giờ khám',
+                                  'Appointment Time',
                                   timeSlot,
                                 ),
                               ),
@@ -840,7 +805,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
           ),
           const SizedBox(height: 24),
           Text(
-            'Có lỗi xảy ra',
+            'An error occurred',
             style: GoogleFonts.lora(
               fontSize: 20,
               fontWeight: FontWeight.w700,
@@ -870,7 +835,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
             ),
             icon: const Icon(Icons.refresh, size: 20),
             label: Text(
-              'Thử lại',
+              'Try Again',
               style: GoogleFonts.lora(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -926,7 +891,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Đang tải lịch hẹn...',
+                      'Loading appointments...',
                       style: GoogleFonts.lora(
                         fontSize: 16,
                         color: textSecondaryColor,
@@ -965,18 +930,17 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
           ),
         ],
       ),
-
     );
   }
 
   String _getEmptyMessage() {
     switch (_currentFilter) {
       case FilterType.today:
-        return 'Không có lịch hẹn nào hôm nay';
+        return 'No appointments today';
       case FilterType.thisMonth:
-        return 'Không có lịch hẹn nào tháng này';
+        return 'No appointments this month';
       case FilterType.thisYear:
-        return 'Không có lịch hẹn nào năm này';
+        return 'No appointments this year';
     }
   }
 }

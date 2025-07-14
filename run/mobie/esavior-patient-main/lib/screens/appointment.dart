@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 import 'dart:math';
-
+import 'paypal_payment_service.dart';
 
 
 const primaryColor = Colors.blue;
@@ -19,14 +19,13 @@ class Appointment extends StatefulWidget {
 
   const Appointment(
       {super.key,
-      required this.isLoggedIn,
-      required this.onLogout,
-      this.patientId,
-      required this.onNavigateToHomePage});
+        required this.isLoggedIn,
+        required this.onLogout,
+        this.patientId,
+        required this.onNavigateToHomePage});
 
   @override
   _AppointmentState createState() => _AppointmentState();
-
 }
 
 class StepBar extends StatelessWidget {
@@ -58,8 +57,8 @@ class StepBar extends StatelessWidget {
                       color: index + 1 < currentStep
                           ? Colors.green
                           : index + 1 == currentStep
-                              ? primaryColor
-                              : Colors.black54,
+                          ? primaryColor
+                          : Colors.black54,
                       borderRadius: BorderRadius.circular(4.0),
                     ),
                   ),
@@ -70,8 +69,8 @@ class StepBar extends StatelessWidget {
                       color: index + 1 < currentStep
                           ? Colors.green
                           : index + 1 == currentStep
-                              ? primaryColor
-                              : Colors.black54,
+                          ? primaryColor
+                          : Colors.black54,
                       fontSize: 14.0,
                     ),
                     textAlign: TextAlign.center,
@@ -89,40 +88,46 @@ class StepBar extends StatelessWidget {
 class _AppointmentState extends State<Appointment> {
   int step = 1;
   bool showSuccess = false;
+  bool isProcessingPayment = false;
 
   final _patientNameController = TextEditingController();
   final _patientEmailController = TextEditingController();
   final _patientPhoneController = TextEditingController();
 
   List departments = [];
-  List doctors = [];
-  List<Map<String, dynamic>> availableSlots = [];
-  List bookedSlots = [];
-  List lockedSlots = [];
+  List availableDoctors = [];
   String? selectedDepartment;
   String? selectedDoctor;
   String? selectedDay;
   String? selectedTimeSlot;
   Timer? _timer;
   bool isDateSelected = false;
+  bool isTimeSelected = false;
   bool isLoading = false;
-  bool isLoadingSlots = false;
   bool isLoadingDepartment = false;
-  bool isLoadingDoctor = false;
-  final _formKeyStep2 = GlobalKey<FormState>();
-  TextEditingController departmentController = TextEditingController();
+  bool isLoadingDoctors = false;
+  bool isLoadingPatientData = false; // New loading state for patient data
+  bool isPatientDataLoaded = false; // Track if patient data was loaded
+  final _formKeyStep3 = GlobalKey<FormState>();
+  String selectedPaymentMethod = "";
+  TextEditingController _departmentSearchController = TextEditingController();
   List filteredDepartments = [];
-  OverlayEntry? _departmentOverlayEntry;
-  final LayerLink _layerLink = LayerLink();
-  final FocusNode _departmentFocusNode = FocusNode();
-  final GlobalKey _searchKey = GlobalKey();
-
-  TextEditingController doctorController = TextEditingController();
-  List filteredDoctors = [];
-  OverlayEntry? _doctorOverlayEntry;
-  final LayerLink _doctorLayerLink = LayerLink();
-  final FocusNode _doctorFocusNode = FocusNode();
-  final GlobalKey _doctorSearchKey = GlobalKey();
+  bool showDepartmentDropdown = false;
+  FocusNode _departmentFocusNode = FocusNode();
+  void _filterDepartments(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        filteredDepartments = departments;
+      } else {
+        filteredDepartments = departments.where((department) {
+          return department['department_name']
+              .toString()
+              .toLowerCase()
+              .contains(query.toLowerCase());
+        }).toList();
+      }
+    });
+  }
 
   // Danh sách các khung giờ
   List<Map<String, dynamic>> timeSlots = [
@@ -180,283 +185,64 @@ class _AppointmentState extends State<Appointment> {
   void initState() {
     super.initState();
     fetchDepartments();
-    filteredDepartments = [];
-    filteredDoctors = [];
+
+    // Initialize filtered departments
+    filteredDepartments = departments;
+
+    // Add listener to handle outside taps
+    _departmentFocusNode.addListener(() {
+      if (!_departmentFocusNode.hasFocus) {
+        setState(() {
+          showDepartmentDropdown = false;
+        });
+      }
+    });
   }
 
-// Hàm hiển thị overlay cho Department với giao diện được cải tiến
-  void _showDepartmentOverlay() {
-    final renderBox = _searchKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-
-    final position = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-    if (_departmentOverlayEntry != null) {
-      _departmentOverlayEntry!.markNeedsBuild();
-      return;
-    }
-    _departmentOverlayEntry = OverlayEntry(
-      builder: (context) {
-        return Positioned(
-          left: 16,                     // padding từ mép trái
-          right: 16,                    // padding từ mép phải
-          top: position.dy + size.height + 4,  // khoảng cách nhỏ dưới TextField
-          child: Material(
-            elevation: 8,
-            borderRadius: BorderRadius.circular(12),
-            shadowColor: Colors.black26,
-            color: Colors.white,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200, width: 1),
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 300),
-                child: filteredDepartments.isEmpty
-                    ? Container(
-                  padding: const EdgeInsets.all(16),
-                  child: const Text(
-                    'No departments found',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                )
-                    : ListView.separated(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  shrinkWrap: true,
-                  itemCount: filteredDepartments.length,
-                  separatorBuilder: (context, index) => Divider(
-                    height: 1,
-                    thickness: 0.5,
-                    color: Colors.grey.shade200,
-                    indent: 16,
-                    endIndent: 16,
-                  ),
-                  itemBuilder: (context, index) {
-                    final dept = filteredDepartments[index];
-                    return InkWell(
-                      onTap: () {
-                        setState(() {
-                          departmentController.text = dept['department_name'];
-                          selectedDepartment = dept['department_id'].toString();
-                          selectedDoctor = null;
-                          doctors = [];
-                          filteredDepartments = [];
-                          fetchDoctors(selectedDepartment!);
-                        });
-                        _removeDepartmentOverlay();
-                        _departmentFocusNode.unfocus();
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: primaryColor.withOpacity(0.7),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                dept['department_name'],
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ),
-                            // Icon(
-                            //   Icons.arrow_forward_ios,
-                            //   size: 14,
-                            //   color: Colors.grey.shade400,
-                            // ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-    Overlay.of(context)?.insert(_departmentOverlayEntry!);
-  }
-
-  void _removeDepartmentOverlay() {
-    _departmentOverlayEntry?.remove();
-    _departmentOverlayEntry = null;
-  }
-
-// Hàm hiển thị overlay cho Doctor với giao diện được cải tiến
-  void _showDoctorOverlay() {
-    final renderBox = _doctorSearchKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-
-    final position = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-
-    if (_doctorOverlayEntry != null) {
-      _doctorOverlayEntry!.markNeedsBuild();
+  // NEW: Load patient data automatically when moving to step 2
+  Future<void> _loadPatientData() async {
+    if (!widget.isLoggedIn || widget.patientId == null) {
       return;
     }
 
-    _doctorOverlayEntry = OverlayEntry(
-      builder: (context) {
-        return Positioned(
-          left: 16,                     // padding từ mép trái
-          right: 16,                    // padding từ mép phải
-          top: position.dy + size.height + 4,  // khoảng cách nhỏ dưới TextField
-          child: Material(
-            elevation: 8,
-            borderRadius: BorderRadius.circular(12),
-            shadowColor: Colors.black26,
-            color: Colors.white,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200, width: 1),
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 300),
-                child: filteredDoctors.isEmpty
-                    ? Container(
-                  padding: const EdgeInsets.all(16),
-                  child: const Text(
-                    'No doctors found',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                )
-                    : ListView.separated(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  shrinkWrap: true,
-                  itemCount: filteredDoctors.length,
-                  separatorBuilder: (context, index) => Divider(
-                    height: 1,
-                    thickness: 0.5,
-                    color: Colors.grey.shade200,
-                    indent: 16,
-                    endIndent: 16,
-                  ),
-                  itemBuilder: (context, index) {
-                    final doctor = filteredDoctors[index];
-                    return InkWell(
-                      onTap: () {
-                        setState(() {
-                          doctorController.text = doctor['doctor_name'];
-                          selectedDoctor = doctor['doctor_id'].toString();
-                          filteredDoctors = [];
-                        });
-                        _removeDoctorOverlay();
-                        _doctorFocusNode.unfocus();
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: primaryColor.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.person,
-                                color: primaryColor,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    doctor['doctor_name'],
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Dr. ${doctor['doctor_name'].split(' ').last}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade50,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: Colors.green.shade200,
-                                  width: 0.5,
-                                ),
-                              ),
-                              child: Text(
-                                'Available',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.green.shade700,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-    Overlay.of(context)?.insert(_doctorOverlayEntry!);
-  }
+    setState(() {
+      isLoadingPatientData = true;
+    });
 
-  void _removeDoctorOverlay() {
-    _doctorOverlayEntry?.remove();
-    _doctorOverlayEntry = null;
+    try {
+      final url = Uri.parse(
+          'http://10.0.2.2:8081/api/v1/patients/search?patient_id=${widget.patientId}');
+
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        var patientData = json.decode(response.body);
+
+        if (patientData.isNotEmpty) {
+          var patient = patientData[0];
+
+          // Auto-populate form fields
+          setState(() {
+            _patientNameController.text = patient['patient_name'] ?? '';
+            _patientEmailController.text = patient['patient_email'] ?? '';
+            _patientPhoneController.text = patient['patient_phone'] ?? '';
+            isPatientDataLoaded = true;
+          });
+
+          // Show success message
+          showTemporaryMessage(context, "Patient information loaded automatically!");
+        }
+      } else {
+        showTemporaryMessage(context, "Failed to load patient data");
+      }
+    } catch (error) {
+      showTemporaryMessage(context, "Error loading patient data: $error");
+      print('Error loading patient data: $error');
+    }
+
+    setState(() {
+      isLoadingPatientData = false;
+    });
   }
 
   String generatePassword() {
@@ -469,7 +255,6 @@ class _AppointmentState extends State<Appointment> {
         lowerCase + upperCase + numbers + specialCharacters;
     final Random random = Random();
 
-    // Generate the password
     String password = List.generate(8, (index) {
       return allCharacters[random.nextInt(allCharacters.length)];
     }).join();
@@ -520,13 +305,13 @@ class _AppointmentState extends State<Appointment> {
     setState(() {
       isLoadingDepartment = true;
     });
-    final url = Uri.parse(
-        'http://10.0.2.2:8081/api/v1/departments/list');
+    final url = Uri.parse('http://10.0.2.2:8081/api/v1/departments/list');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         setState(() {
           departments = json.decode(response.body);
+          filteredDepartments = departments; // Initialize filtered list
         });
       } else {
         print('Lỗi khi lấy danh sách khoa!');
@@ -539,179 +324,461 @@ class _AppointmentState extends State<Appointment> {
     });
   }
 
-
-
-  // Lấy danh sách bác sĩ theo khoa
-  Future<void> fetchDoctors(String departmentId) async {
+  // Lấy danh sách bác sĩ có slot trống
+  Future<void> fetchAvailableDoctors(String departmentId, String date, String timeSlot) async {
     setState(() {
-      isLoadingDoctor = true;
+      isLoadingDoctors = true;
     });
     final url = Uri.parse(
-        'http://10.0.2.2:8081/api/v1/departments/$departmentId/doctors');
+        'http://10.0.2.2:8081/api/v1/appointments/available-doctors?departmentId=$departmentId&date=$date&timeSlot=$timeSlot');
     try {
       final response = await http.get(url);
-      if (response.statusCode == 200) {
-        setState(() {
-          doctors = json.decode(response.body);
-        });
-      } else {
-        print('Lỗi khi lấy danh sách bác sĩ!');
-      }
+
+      setState(() {
+        availableDoctors = json.decode(response.body);
+      });
+
     } catch (error) {
-      print('Lỗi: $error');
+      print('Error: $error');
+      setState(() {
+        availableDoctors = [];
+      });
     }
     setState(() {
-      isLoadingDoctor = false;
+      isLoadingDoctors = false;
     });
   }
 
-  // Lấy các slot có sẵn của bác sĩ theo ngày
-  Future<void> fetchAvailableSlots(String doctorId, String day) async {
+  // Hàm reset date selection
+  void resetDateSelection() {
     setState(() {
-      isLoadingSlots = true;
+      selectedDay = null;
+      isDateSelected = false;
+      selectedTimeSlot = null;
+      isTimeSelected = false;
+      selectedDepartment = null;
+      selectedDoctor = null;
+      availableDoctors = [];
     });
-    final url = Uri.parse(
-        'http://10.0.2.2:8081/api/v1/appointments/$doctorId/slots?date=$day');
-    try {
-      print(
-          'Fetching available slots for doctorId: $doctorId on date: $day'); // In thông tin để kiểm tra
-      final response = await http.get(url);
-
-      print(
-          'Response status: ${response.statusCode}'); // In ra mã trạng thái phản hồi
-      if (response.statusCode == 200) {
-        print('Response body: ${response.body}'); // In ra chi tiết phản hồi
-
-        setState(() {
-          bookedSlots = json.decode(response.body); // Nhận các slot đã đặt
-          print('Booked slots: $bookedSlots'); // In ra các slot đã được đặt
-          filterAvailableSlots(); // Lọc các slot còn trống
-        });
-      } else {
-        print(
-            'Error fetching slots: Status Code ${response.statusCode}, Response: ${response.body}'); // In chi tiết lỗi
-      }
-    } catch (error) {
-      print('Error occurred: $error'); // In ra chi tiết lỗi
-    }
   }
 
-  // Lấy các slot bị khóa
-  Future<void> fetchLockedSlots(String doctorId, String day) async {
-    final url = Uri.parse(
-        'http://10.0.2.2:8081/api/v1/appointments/check-locked-slots?doctorId=$doctorId&date=$day');
-    try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        setState(() {
-          lockedSlots = json.decode(response.body); // Lưu lại các slot bị khóa
-          filterAvailableSlots(); // Cập nhật danh sách slot
-        });
-      } else {
-        print('Lỗi khi lấy các slot bị khóa!');
-      }
-    } catch (error) {
-      print('Lỗi: $error');
-    }
-  }
-
-  // Lọc các slot còn trống và loại bỏ slot đã được đặt, slot đang bị khóa, và slot quá khứ
-  void filterAvailableSlots() {
+  // Hàm reset department selection
+  void resetDepartmentSelection() {
     setState(() {
-      DateTime currentTime = DateTime.now();
+      selectedDepartment = null;
+      selectedDoctor = null;
+      availableDoctors = [];
+    });
+  }
 
-      availableSlots = timeSlots.where((slot) {
-        bool isPastTime = false;
-        bool isBooked = false; // Biến để kiểm tra slot đã đặt
+  // Build time slots UI
+  Widget buildTimeSlots() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Select Time Slot',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: blackColor,
+            ),
+          ),
+          const SizedBox(height: 10),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 3,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
+            itemCount: timeSlots.length,
+            itemBuilder: (context, index) {
+              final slot = timeSlots[index];
+              final isSelected = selectedTimeSlot == slot['value'].toString();
 
-        if (selectedDay != null) {
-          DateTime selectedDate = DateTime.parse(selectedDay!);
-          DateTime today = DateTime.now();
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedTimeSlot = slot['value'].toString();
+                    isTimeSelected = true;
+                    // Reset selections when time changes
+                    selectedDepartment = null;
+                    selectedDoctor = null;
+                    availableDoctors = [];
+                  });
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isSelected ? primaryColor : whiteColor,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected ? primaryColor : Colors.grey.shade300,
+                      width: 1,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      slot['label'],
+                      style: TextStyle(
+                        color: isSelected ? whiteColor : blackColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
-          // Kiểm tra nếu là ngày hôm nay, ẩn các slot trong quá khứ
-          if (selectedDate.year == today.year &&
-              selectedDate.month == today.month &&
-              selectedDate.day == today.day) {
-            final slotStartTime = DateTime(
-                today.year,
-                today.month,
-                today.day,
-                int.parse(slot['start'].split(':')[0]),
-                int.parse(slot['start'].split(':')[1]));
+  // Handle appointment submission after successful payment
+  void handleAppointmentSubmit(String paymentMethod) async {
+    setState(() {
+      isLoading = true;
+    });
 
-            isPastTime = slotStartTime.isBefore(currentTime);
-          }
+    try {
+      // Get selected doctor details
+      final selectedDoctorData = availableDoctors.firstWhere(
+            (doc) => doc['doctor_id'].toString() == selectedDoctor,
+      );
 
-          // Kiểm tra nếu slot đã được đặt trong bookedSlots
-          isBooked = bookedSlots.any((bookedSlot) =>
-              bookedSlot['slot'] == slot['value'] &&
-              bookedSlot['medical_day'] == selectedDay!.substring(0, 10));
+      // Random staff_id from 1-20
+      final Random random = Random();
+      final randomStaffId = random.nextInt(20) + 1;
+
+      // Prepare appointment data
+      final appointmentData = {
+        'patient_name': _patientNameController.text,
+        'patient_email': _patientEmailController.text,
+        'patient_phone': _patientPhoneController.text,
+        'doctor_id': int.parse(selectedDoctor!),
+        'department_id': int.parse(selectedDepartment!),
+        'medical_day': selectedDay!.substring(0, 10),
+        'slot': int.parse(selectedTimeSlot!),
+        'patient_password': generatePassword(),
+        'status': 'PENDING',
+        'appointment_date': DateTime.now().toIso8601String().substring(0, 10),
+        // Sử dụng payment method thực tế đã chọn
+        'price': selectedDoctorData['doctor_price'] ?? 50,
+        'payment_name': paymentMethod, // CREDIT_CARD hoặc CASH
+        'staff_id': randomStaffId,
+      };
+
+      // Make API call to book appointment
+      final url = Uri.parse('http://10.0.2.2:8081/api/v1/appointments/insert');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(appointmentData),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        setState(() {
+          showSuccess = true;
+          isLoading = false;
+          selectedPaymentMethod = paymentMethod; // Lưu payment method đã chọn
+        });
+
+        showTemporaryMessage(context, "Appointment booked successfully!");
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+
+        String errorMessage = 'Failed to book appointment. Please try again.';
+        if (response.statusCode == 400) {
+          errorMessage = 'Invalid appointment data. Please check your information.';
+        } else if (response.statusCode == 409) {
+          errorMessage = 'This time slot is no longer available. Please select another time.';
         }
 
-        // Trả về các slot chưa được đặt và không phải là slot trong quá khứ
-        return !isBooked && !isPastTime;
-      }).toList();
-      isLoadingSlots = false;
-    });
-  }
-
-  // Gửi yêu cầu khóa slot về backend và khóa slot trong 5 phút
-  Future<void> lockSlotTemporarily(String slotValue) async {
-    try {
-      final response = await http.post(
-        Uri.parse(
-            'http://10.0.2.2:8081/api/v1/appointments/lock-slot'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'doctorId': selectedDoctor,
-          'date': selectedDay,
-          'time': slotValue,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        setState(() {
-          selectedTimeSlot = slotValue;
-        });
-
-        // Sau 5 phút sẽ tự động mở khóa nếu người dùng không xác nhận
-        _timer?.cancel();
-        _timer = Timer(const Duration(minutes: 5), () {
-          unlockSlot(slotValue);
-        });
-      } else if (response.statusCode == 409) {
-        // Slot đã bị khóa bởi người khác
-        showTemporaryMessage(
-            context, "This slot is unavailable. Please select another slot.");
-      } else {
-        print('Lỗi khi khóa slot!');
+        showTemporaryMessage(context, errorMessage);
       }
     } catch (error) {
-      print('Lỗi khi gửi yêu cầu khóa slot: $error');
+      setState(() {
+        isLoading = false;
+      });
+
+      showTemporaryMessage(context, "Network error. Please check your connection and try again.");
+      print('Error booking appointment: $error');
     }
   }
 
-  // Gửi yêu cầu mở khóa slot về backend sau 5 phút
-  Future<void> unlockSlot(String slotValue) async {
+  // Handle PayPal payment
+  void handlePayPalPayment() {
+    if (availableDoctors.isEmpty || selectedDoctor == null) {
+      showTemporaryMessage(context, "Please select a doctor first.");
+      return;
+    }
+
+    final selectedDoctorData = availableDoctors.firstWhere(
+          (doc) => doc['doctor_id'].toString() == selectedDoctor,
+    );
+
+    final amount = selectedDoctorData['doctor_price']?.toString() ?? '50';
+
+    setState(() {
+      isProcessingPayment = true;
+      selectedPaymentMethod = "CREDIT_CARD"; // Set to CREDIT_CARD to show loading on PayPal button
+    });
+
+    PayPalPaymentService.makePayment(
+      context: context,
+      amount: amount,
+      currency: 'USD',
+      onSuccess: (params) {
+        setState(() {
+          isProcessingPayment = false;
+        });
+
+        // Confirm payment with backend
+        confirmPaymentWithBackend();
+
+        // Submit appointment với CREDIT_CARD
+        handleAppointmentSubmit("CREDIT_CARD");
+
+        showTemporaryMessage(context, "PayPal payment successful! Booking appointment...");
+      },
+      onError: (error) {
+        setState(() {
+          isProcessingPayment = false;
+        });
+        showTemporaryMessage(context, "Payment failed: $error");
+      },
+      onCancel: () {
+        setState(() {
+          isProcessingPayment = false;
+        });
+        showTemporaryMessage(context, "Payment cancelled.");
+      },
+    );
+  }
+
+  // Handle Cash payment
+  void handleCashPayment() {
+    if (availableDoctors.isEmpty || selectedDoctor == null) {
+      showTemporaryMessage(context, "Please select a doctor first.");
+      return;
+    }
+
+    // Show confirmation dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final selectedDoctorData = availableDoctors.firstWhere(
+              (doc) => doc['doctor_id'].toString() == selectedDoctor,
+        );
+        final amount = selectedDoctorData['doctor_price']?.toString() ?? '50';
+
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.money,
+                color: Colors.green.shade600,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Cash Payment',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: blackColor,
+                ),
+              ),
+              const Spacer(), // Đẩy nút X về bên phải
+              GestureDetector(
+                onTap: () => Navigator.of(context).pop(), // Đóng dialog
+                child: const Icon(
+                  Icons.close,
+                  color: Colors.grey,
+                  size: 30,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Please confirm your cash payment:',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: blackColor,
+                ),
+              ),
+              const SizedBox(height: 15),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Amount to Pay:',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: blackColor,
+                          ),
+                        ),
+                        Text(
+                          '\$$amount',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 15),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.orange.shade700,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Please bring exact amount to your appointment.',
+                        style: TextStyle(
+                          color: Colors.orange.shade700,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close dialog
+              },
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: whiteColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green.shade600,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close dialog
+
+                // Process cash payment
+                setState(() {
+                  isProcessingPayment = true;
+                  selectedPaymentMethod = "CASH"; // Set to CASH to show loading on cash button
+                });
+
+                // Simulate processing time
+                Future.delayed(const Duration(seconds: 2), () {
+                  setState(() {
+                    isProcessingPayment = false;
+                  });
+
+                  // Submit appointment với CASH
+                  handleAppointmentSubmit("CASH");
+
+                  showTemporaryMessage(context, "Cash payment confirmed! Booking appointment...");
+                });
+              },
+              child: const Text(
+                'Confirm',
+                style: TextStyle(
+                  color: whiteColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Confirm payment with backend
+  Future<void> confirmPaymentWithBackend() async {
     try {
+      final url = Uri.parse('http://10.0.2.2:8081/api/v1/appointments/confirm-payment');
       await http.post(
-        Uri.parse(
-            'http://10.0.2.2:8081/api/v1/appointments/unlock-slot'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
           'doctorId': selectedDoctor,
-          'date': selectedDay,
-          'time': slotValue,
+          'date': selectedDay!.substring(0, 10),
+          'time': selectedTimeSlot,
         }),
       );
     } catch (error) {
-      print('Lỗi khi mở khóa slot: $error');
+      print('Error confirming payment: $error');
     }
   }
 
-
-
-  // Bước 1: Chọn khoa, bác sĩ, ngày giờ khám
+  // Bước 1: Chọn ngày và giờ (keeping original code)
   Widget buildFormStep1() {
     return Column(
       children: [
@@ -720,7 +787,7 @@ class _AppointmentState extends State<Appointment> {
           margin: const EdgeInsets.only(top: 20),
           alignment: Alignment.center,
           child: const Text(
-            'Select',
+            'Book Appointment',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -730,148 +797,7 @@ class _AppointmentState extends State<Appointment> {
         ),
         const SizedBox(height: 20),
 
-        // Department Search Field
-        Container(
-          key: _searchKey,
-          margin: const EdgeInsets.only(top: 20.0),
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: Colors.black54, width: 1.0),
-          ),
-          child: CompositedTransformTarget(
-            link: _layerLink,
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    focusNode: _departmentFocusNode,
-                    controller: departmentController,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        filteredDepartments = departments.where((dept) {
-                          return dept['department_name']
-                              .toLowerCase()
-                              .contains(value.toLowerCase());
-                        }).toList();
-
-                        if (filteredDepartments.isNotEmpty && value.isNotEmpty) {
-                          _showDepartmentOverlay();
-                        } else {
-                          _removeDepartmentOverlay();
-                        }
-                      });
-                    },
-                    onTap: () {
-                      setState(() {
-                        filteredDepartments = departments;
-                      });
-                      if (filteredDepartments.isNotEmpty) {
-                        _showDepartmentOverlay();
-                      }
-                    },
-                    decoration: const InputDecoration(
-                      hintText: 'Select Department',
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-                const Icon(Icons.arrow_drop_down, color: Colors.black54),
-              ],
-            ),
-          ),
-        ),
-
-        // Doctor Search Field
-        Container(
-          key: _doctorSearchKey,
-          margin: const EdgeInsets.only(top: 20.0),
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: Colors.black54, width: 1.0),
-          ),
-          child: CompositedTransformTarget(
-            link: _doctorLayerLink,
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    focusNode: _doctorFocusNode,
-                    controller: doctorController,
-                    enabled: selectedDepartment != null,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        filteredDoctors = doctors.where((doctor) {
-                          return doctor['doctor_name']
-                              .toLowerCase()
-                              .contains(value.toLowerCase());
-                        }).toList();
-
-                        if (filteredDoctors.isNotEmpty && value.isNotEmpty) {
-                          _showDoctorOverlay();
-                        } else {
-                          _removeDoctorOverlay();
-                        }
-                      });
-                    },
-                    onTap: () {
-                      if (selectedDepartment == null) {
-                        showTemporaryMessage(context, "Please select a department first!");
-                        return;
-                      }
-                      setState(() {
-                        filteredDoctors = doctors;
-                      });
-                      if (filteredDoctors.isNotEmpty) {
-                        _showDoctorOverlay();
-                      }
-                    },
-                    decoration: InputDecoration(
-                      hintText: selectedDepartment == null
-                          ? 'Select Department First'
-                          : isLoadingDoctor
-                          ? 'Loading Doctors...'
-                          : 'Select Doctor',
-                      hintStyle: TextStyle(
-                        color: selectedDepartment == null ? Colors.red : Colors.black54,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-                if (isLoadingDoctor)
-                  const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
-                    ),
-                  )
-                else
-                  const Icon(Icons.arrow_drop_down, color: Colors.black54),
-              ],
-            ),
-          ),
-        ),
-
-        // Date Selection
+        // Date Selection with X button
         Container(
           width: double.infinity,
           margin: const EdgeInsets.only(top: 20.0),
@@ -884,56 +810,72 @@ class _AppointmentState extends State<Appointment> {
           ),
           child: InkWell(
             onTap: () async {
-              if (selectedDoctor == null) {
-                showTemporaryMessage(context, "Please select a doctor first!");
-              } else {
-                final selected = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 30)),
-                  builder: (BuildContext context, Widget? child) {
-                    return Theme(
-                      data: ThemeData.light().copyWith(
-                        primaryColor: primaryColor,
-                        hintColor: primaryColor,
-                        colorScheme:
-                        const ColorScheme.light(primary: primaryColor),
-                        buttonTheme: const ButtonThemeData(
-                            textTheme: ButtonTextTheme.primary),
-                      ),
-                      child: child!,
-                    );
-                  },
-                );
-                if (selected != null) {
-                  setState(() {
-                    selectedDay = selected.toIso8601String();
-                    isDateSelected = true;
-                    if (selectedDoctor != null && selectedDay != null) {
-                      fetchAvailableSlots(selectedDoctor!, selectedDay!);
-                      fetchLockedSlots(selectedDoctor!, selectedDay!);
-                    }
-                  });
-                }
+              final selected = await showDatePicker(
+                context: context,
+                initialDate: DateTime.now(),
+                firstDate: DateTime.now(),
+                lastDate: DateTime.now().add(const Duration(days: 30)),
+                builder: (BuildContext context, Widget? child) {
+                  return Theme(
+                    data: ThemeData.light().copyWith(
+                      primaryColor: primaryColor,
+                      hintColor: primaryColor,
+                      colorScheme: const ColorScheme.light(primary: primaryColor),
+                      buttonTheme: const ButtonThemeData(
+                          textTheme: ButtonTextTheme.primary),
+                    ),
+                    child: child!,
+                  );
+                },
+              );
+              if (selected != null) {
+                setState(() {
+                  selectedDay = selected.toIso8601String();
+                  isDateSelected = true;
+                  // Reset selections when date changes
+                  selectedTimeSlot = null;
+                  isTimeSelected = false;
+                  selectedDepartment = null;
+                  selectedDoctor = null;
+                  availableDoctors = [];
+                });
               }
             },
             child: Padding(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    selectedDay != null
-                        ? selectedDay!.substring(0, 10)
-                        : 'Select Date',
-                    style: TextStyle(
-                        color: isDateSelected ? blackColor : Colors.black54,
-                        fontSize: 16.0,
-                        fontWeight: FontWeight.bold),
+                  Expanded(
+                    child: Text(
+                      selectedDay != null
+                          ? selectedDay!.substring(0, 10)
+                          : 'Select Date',
+                      style: TextStyle(
+                          color: isDateSelected ? blackColor : Colors.black54,
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  const Icon(Icons.calendar_month_rounded, color: blackColor),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isDateSelected)
+                        GestureDetector(
+                          onTap: resetDateSelection,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.red,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.calendar_month_rounded, color: blackColor),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -941,17 +883,372 @@ class _AppointmentState extends State<Appointment> {
         ),
 
         // Time Slots
-        if (isDateSelected)
-          isLoadingSlots
-              ? Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 20),
-              child: const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+        if (isDateSelected) buildTimeSlots(),
+
+        // Department Dropdown with X button
+        if (isDateSelected && selectedTimeSlot != null) ...[
+          // const SizedBox(height: 20),
+
+          // Department Search Field
+          Container(
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+                const Text(
+                  'Search Department',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: blackColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Search Input Field
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: Colors.black54, width: 1.0),
+                  ),
+                  child: TextFormField(
+                    controller: _departmentSearchController,
+                    focusNode: _departmentFocusNode,
+                    style: const TextStyle(
+                      color: blackColor,
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search, color: Colors.black54),
+                      suffixIcon: _departmentSearchController.text.isNotEmpty
+                          ? GestureDetector(
+                        onTap: () {
+                          _departmentSearchController.clear();
+                          setState(() {
+                            selectedDepartment = null;
+                            selectedDoctor = null;
+                            availableDoctors = [];
+                            showDepartmentDropdown = false;
+                            filteredDepartments = departments;
+                          });
+                        },
+                        child: const Icon(Icons.clear, color: Colors.red, size: 20,),
+
+                      )
+
+                          : null,
+                      hintText: 'Search departments...',
+                      hintStyle: const TextStyle(
+                        color: Colors.black54,
+                        fontSize: 16.0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    onChanged: (value) {
+                      _filterDepartments(value);
+                      setState(() {
+                        showDepartmentDropdown = value.isNotEmpty;
+                        selectedDepartment = null;
+                        selectedDoctor = null;
+                        availableDoctors = [];
+                      });
+                    },
+                    onTap: () {
+                      setState(() {
+                        showDepartmentDropdown = true;
+                        if (filteredDepartments.isEmpty) {
+                          filteredDepartments = departments;
+                        }
+                      });
+                    },
+                  ),
+                ),
+
+                // Search Results Dropdown
+                if (showDepartmentDropdown && filteredDepartments.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    decoration: BoxDecoration(
+                      color: whiteColor,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade300),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          spreadRadius: 1,
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: filteredDepartments.length,
+                      itemBuilder: (context, index) {
+                        final department = filteredDepartments[index];
+                        return ListTile(
+                          dense: true,
+                          title: Text(
+                            department['department_name'],
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: blackColor,
+                            ),
+                          ),
+
+                          onTap: () {
+                            setState(() {
+                              selectedDepartment = department['department_id'].toString();
+                              _departmentSearchController.text = department['department_name'];
+                              showDepartmentDropdown = false;
+                              selectedDoctor = null;
+                              _departmentFocusNode.unfocus();
+
+                              // Fetch available doctors for selected department
+                              if (selectedDepartment != null && selectedDay != null && selectedTimeSlot != null) {
+                                fetchAvailableDoctors(
+                                    selectedDepartment!,
+                                    selectedDay!.substring(0, 10),
+                                    selectedTimeSlot!
+                                );
+                              }
+                            });
+                          },
+                          trailing: selectedDepartment == department['department_id'].toString()
+                              ? const Icon(Icons.check, color: Colors.green)
+                              : null,
+                        );
+                      },
+                    ),
+                  ),
+
+                // No results message
+                if (showDepartmentDropdown && filteredDepartments.isEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.search_off, color: Colors.red.shade600),
+                        const SizedBox(width: 8),
+                        Text(
+                          'No departments found matching "${_departmentSearchController.text}"',
+                          style: TextStyle(
+                            color: Colors.red.shade600,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+
+              ],
+            ),
+          ),
+        ],
+
+        // Available Doctors Grid (keeping original code)
+        if (selectedDepartment != null && selectedDay != null && selectedTimeSlot != null) ...[
+          const SizedBox(height: 20),
+          Container(
+            width: double.infinity,
+            child: const Text(
+              'Available Doctors',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: blackColor,
               ),
             ),
-          )
-              : buildTimeSlots(),
+          ),
+          const SizedBox(height: 10),
+
+          if (isLoadingDoctors)
+            const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+              ),
+            )
+          else if (availableDoctors.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: const Text(
+                'No doctors available for the selected time slot.',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            )
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.75,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+              itemCount: availableDoctors.length,
+              itemBuilder: (context, index) {
+                final doctor = availableDoctors[index];
+                final isSelected = selectedDoctor == doctor['doctor_id'].toString();
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      selectedDoctor = doctor['doctor_id'].toString();
+                    });
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: isSelected ? primaryColor : Colors.grey.shade300,
+                        width: isSelected ? 2 : 1,
+                      ),
+                      color: isSelected ? primaryColor.withOpacity(0.1) : whiteColor,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          spreadRadius: 1,
+                          blurRadius: 3,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Doctor Image
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected ? primaryColor : Colors.grey.shade300,
+                                width: 2,
+                              ),
+                            ),
+                            child: ClipOval(
+                              child: doctor['doctor_image'] != null && doctor['doctor_image'].toString().isNotEmpty
+                                  ? Image.network(
+                                doctor['doctor_image'],
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: primaryColor.withOpacity(0.1),
+                                    child: const Icon(
+                                      Icons.person,
+                                      color: primaryColor,
+                                      size: 30,
+                                    ),
+                                  );
+                                },
+                              )
+                                  : Container(
+                                color: primaryColor.withOpacity(0.1),
+                                child: const Icon(
+                                  Icons.person,
+                                  color: primaryColor,
+                                  size: 30,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Doctor Name
+                          Text(
+                            doctor['doctor_name'],
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected ? primaryColor : blackColor,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+
+                          // Specialization
+                          if (doctor['specialization'] != null)
+                            Text(
+                              doctor['specialization'],
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          const SizedBox(height: 8),
+
+                          // Price
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isSelected ? primaryColor : Colors.green.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '\$${doctor['doctor_price'] ?? '50'}',
+                              style: TextStyle(
+                                color: isSelected ? whiteColor : Colors.green.shade700,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+
+                          // Selected indicator
+                          if (isSelected) ...[
+                            const SizedBox(height: 4),
+                            const Icon(
+                              Icons.check_circle,
+                              color: primaryColor,
+                              size: 20,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+        ],
+
         const SizedBox(height: 20),
 
         // Next Step Button
@@ -967,20 +1264,22 @@ class _AppointmentState extends State<Appointment> {
               padding: const EdgeInsets.symmetric(vertical: 15),
             ),
             onPressed: () {
-              if (selectedDepartment == null ||
-                  selectedDoctor == null ||
-                  selectedDay == null ||
-                  selectedTimeSlot == null) {
-                showTemporaryMessage(context,
-                    "Please fill all fields before going to the next step.");
+              if (selectedDay == null || selectedTimeSlot == null) {
+                showTemporaryMessage(context, "Please select date and time slot.");
+              } else if (selectedDepartment == null) {
+                showTemporaryMessage(context, "Please select a department.");
+              } else if (selectedDoctor == null) {
+                showTemporaryMessage(context, "Please select a doctor.");
               } else {
                 setState(() {
                   step = 2;
                 });
+                // MODIFIED: Auto-load patient data when moving to step 2
+                _loadPatientData();
               }
             },
             child: const Text(
-              'Next Step',
+              'Next',
               style: TextStyle(
                   color: whiteColor,
                   fontSize: 16.0,
@@ -992,10 +1291,10 @@ class _AppointmentState extends State<Appointment> {
     );
   }
 
-  // Bước 2: Nhập thông tin khách hàng
+  // MODIFIED: Bước 2 with auto-population functionality
   Widget buildFormStep2() {
     return Form(
-      key: _formKeyStep2,
+      key: _formKeyStep3,
       child: Column(
         children: [
           Container(
@@ -1003,7 +1302,7 @@ class _AppointmentState extends State<Appointment> {
             margin: const EdgeInsets.only(top: 20),
             alignment: Alignment.center,
             child: const Text(
-              'Enter Information',
+              'Patient Information',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -1011,9 +1310,77 @@ class _AppointmentState extends State<Appointment> {
               ),
             ),
           ),
-          const SizedBox(
-            height: 40,
+          const SizedBox(height: 10),
+
+          // NEW: Auto-load status indicator
+          if (widget.isLoggedIn && widget.patientId != null)
+
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(top: 10, bottom: 30),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: primaryColor.withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Appointment Summary',
+                  style: TextStyle(
+                    color: primaryColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Date: ${selectedDay!.substring(0, 10)}',
+                  style: const TextStyle(
+                    color: blackColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'Time: ${timeSlots.firstWhere((slot) => slot['value'].toString() == selectedTimeSlot)['label']}',
+                  style: const TextStyle(
+                    color: blackColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'Department: ${departments.firstWhere((dept) => dept['department_id'].toString() == selectedDepartment)['department_name']}',
+                  style: const TextStyle(
+                    color: blackColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'Doctor: ${availableDoctors.firstWhere((doc) => doc['doctor_id'].toString() == selectedDoctor)['doctor_name']}',
+                  style: const TextStyle(
+                    color: blackColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'Price: \$${availableDoctors.firstWhere((doc) => doc['doctor_id'].toString() == selectedDoctor)['doctor_price'] ?? '50'}',
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
+
+          // Patient Information Form (keeping original styling)
           SizedBox(
             width: double.infinity,
             child: TextFormField(
@@ -1195,122 +1562,10 @@ class _AppointmentState extends State<Appointment> {
               },
             ),
           ),
-          const SizedBox(height: 20),
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(top: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.45,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: whiteColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      side: const BorderSide(
-                        color: primaryColor,
-                        width: 1,
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        step = 1;
-                      });
-                    },
-                    child: const Text(
-                      'Prev Step',
-                      style: TextStyle(
-                          color: primaryColor,
-                          fontSize: 16.0,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.45,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                    ),
-                    onPressed: () {
-                      if (_formKeyStep2.currentState!.validate()) {
-                        setState(() {
-                          step = 3;
-                        });
-                      }
-                    },
-                    child: const Text(
-                      'Next Step',
-                      style: TextStyle(
-                          color: whiteColor,
-                          fontSize: 16.0,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                )
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  // Bước 3: Xác nhận thông tin đặt lịch
-  Widget buildFormStep3() {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(top: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Tiêu đề
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(top: 20),
-            alignment: Alignment.center,
-            child: const Text(
-              'Information',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: primaryColor,
-              ),
-            ),
-          ),
           const SizedBox(height: 20),
 
-          // Thông tin đặt lịch
-          _buildInfoRow('Full Name:', _patientNameController.text),
-          _buildInfoRow('Email Address:', _patientEmailController.text),
-          _buildInfoRow('Phone Number:', _patientPhoneController.text),
-          _buildInfoRow(
-              'Department:',
-              departments.firstWhere((dept) =>
-                  dept['department_id'].toString() ==
-                  selectedDepartment)['department_name']),
-          _buildInfoRow(
-              'Doctor:',
-              doctors.firstWhere((doc) =>
-                  doc['doctor_id'].toString() ==
-                  selectedDoctor)['doctor_name']),
-          _buildInfoRow('Appointment Date:',
-              selectedDay != null ? selectedDay!.substring(0, 10) : ''),
-          _buildInfoRow(
-              'Appointment Time:',
-              timeSlots.firstWhere((slot) =>
-                  slot['value'].toString() == selectedTimeSlot)['label']),
-
-          const SizedBox(height: 30),
-
+          // Navigation Buttons
           Container(
             width: double.infinity,
             margin: const EdgeInsets.only(top: 20),
@@ -1333,11 +1588,11 @@ class _AppointmentState extends State<Appointment> {
                     ),
                     onPressed: () {
                       setState(() {
-                        step = 2;
+                        step = 1;
                       });
                     },
                     child: const Text(
-                      'Prev Step',
+                      'Back',
                       style: TextStyle(
                           color: primaryColor,
                           fontSize: 16.0,
@@ -1348,7 +1603,6 @@ class _AppointmentState extends State<Appointment> {
                 SizedBox(
                   width: MediaQuery.of(context).size.width * 0.45,
                   child: ElevatedButton(
-                    onPressed: handleAppointmentSubmit,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
                       shape: RoundedRectangleBorder(
@@ -1356,11 +1610,20 @@ class _AppointmentState extends State<Appointment> {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 15),
                     ),
-                    child: const Text('Finish',
-                        style: TextStyle(
-                            color: whiteColor,
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.bold)),
+                    onPressed: () {
+                      if (_formKeyStep3.currentState!.validate()) {
+                        setState(() {
+                          step = 3;
+                        });
+                      }
+                    },
+                    child: const Text(
+                      'Next',
+                      style: TextStyle(
+                          color: whiteColor,
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.bold),
+                    ),
                   ),
                 )
               ],
@@ -1371,175 +1634,401 @@ class _AppointmentState extends State<Appointment> {
     );
   }
 
-// Hàm xây dựng hàng thông tin
-  Widget _buildInfoRow(String title, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title,
-              style: const TextStyle(
+  // Bước 3: Thanh toán và xác nhận (keeping original code)
+  Widget buildFormStep3() {
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(top: 20),
+          alignment: Alignment.center,
+          child: const Text(
+            'Payment & Confirmation',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: primaryColor,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Complete appointment summary (giữ nguyên code cũ)
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(top: 10, bottom: 30),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: whiteColor,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: primaryColor.withOpacity(0.3)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.calendar_today,
+                      color: primaryColor,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Appointment Details',
+                    style: TextStyle(
+                      color: primaryColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Date & Time
+              _buildConfirmationRow(
+                Icons.calendar_month,
+                'Date',
+                selectedDay!.substring(0, 10),
+              ),
+              _buildConfirmationRow(
+                Icons.access_time,
+                'Time',
+                timeSlots.firstWhere((slot) => slot['value'].toString() == selectedTimeSlot)['label'],
+              ),
+
+              const Divider(height: 30, thickness: 1),
+
+              // Department & Doctor
+              _buildConfirmationRow(
+                Icons.local_hospital,
+                'Department',
+                departments.firstWhere((dept) => dept['department_id'].toString() == selectedDepartment)['department_name'],
+              ),
+              _buildConfirmationRow(
+                Icons.person_outline,
+                'Doctor',
+                availableDoctors.firstWhere((doc) => doc['doctor_id'].toString() == selectedDoctor)['doctor_name'],
+              ),
+
+              const Divider(height: 30, thickness: 1),
+
+              // Patient Information
+              _buildConfirmationRow(
+                Icons.person,
+                'Patient Name',
+                _patientNameController.text,
+              ),
+              _buildConfirmationRow(
+                Icons.email,
+                'Email',
+                _patientEmailController.text,
+              ),
+              _buildConfirmationRow(
+                Icons.phone,
+                'Phone',
+                _patientPhoneController.text,
+              ),
+
+              const Divider(height: 30, thickness: 1),
+
+              // Price
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Total Amount',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: blackColor,
+                      ),
+                    ),
+                    Text(
+                      '\$${availableDoctors.firstWhere((doc) => doc['doctor_id'].toString() == selectedDoctor)['doctor_price'] ?? '50'}',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Payment Methods Section
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Select Payment Method',
+                style: TextStyle(
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: blackColor)),
+                  color: blackColor,
+                ),
+              ),
+              const SizedBox(height: 15),
+
+              // PayPal Payment Button
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 10),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0070BA), // PayPal blue color
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                  ),
+                  onPressed: isProcessingPayment ? null : handlePayPalPayment,
+                  child: isProcessingPayment && selectedPaymentMethod == "CREDIT_CARD"
+                      ? const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: whiteColor,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      Text(
+                        'Processing PayPal Payment...',
+                        style: TextStyle(
+                          color: whiteColor,
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  )
+                      : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.payment,
+                        color: whiteColor,
+                        size: 20,
+                      ),
+                      SizedBox(width: 10),
+                      Text(
+                        'Pay with PayPal (Credit Card)',
+                        style: TextStyle(
+                          color: whiteColor,
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Cash Payment Button
+              Container(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade600,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                  ),
+                  onPressed: isProcessingPayment ? null : handleCashPayment,
+                  child: isProcessingPayment && selectedPaymentMethod == "CASH"
+                      ? const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: whiteColor,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      Text(
+                        'Processing Cash Payment...',
+                        style: TextStyle(
+                          color: whiteColor,
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  )
+                      : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.money,
+                        color: whiteColor,
+                        size: 20,
+                      ),
+                      SizedBox(width: 10),
+                      Text(
+                        'Pay with Cash',
+                        style: TextStyle(
+                          color: whiteColor,
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Important Notice
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 20),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.orange.shade200),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: Colors.orange.shade700,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Choose your preferred payment method. For cash payment, please bring exact amount to the appointment.',
+                  style: TextStyle(
+                    color: Colors.orange.shade700,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Back Button
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(top: 20),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: whiteColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+                side: const BorderSide(
+                  color: primaryColor,
+                  width: 1,
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 15),
+            ),
+            onPressed: isProcessingPayment ? null : () {
+              setState(() {
+                step = 2;
+              });
+            },
+            child: const Text(
+              'Back',
+              style: TextStyle(
+                  color: primaryColor,
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Helper method for confirmation rows
+  Widget _buildConfirmationRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: Colors.grey.shade600,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               value,
-              textAlign: TextAlign.end,
               style: const TextStyle(
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Colors.black54,
+                color: blackColor,
               ),
             ),
           ),
         ],
       ),
     );
-  }
-
-  // Hiển thị các khung giờ
-  Widget buildTimeSlots() {
-    return Container(
-      margin: const EdgeInsets.only(top: 20),
-      width: double.infinity,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (availableSlots.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 15.0, horizontal: 10.0),
-              child: Text(
-                'No available slots. Please select a different date or doctor.',
-                style: TextStyle(
-                  color: Colors.black54,
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            )
-          else
-            Container(
-              margin: const EdgeInsets.only(bottom: 20, top: 10),
-              child: const Text(
-                'Select Slot',
-                style: TextStyle(
-                  color: primaryColor,
-                  fontSize: 22.0,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          Wrap(
-            spacing: 5.0,
-            runSpacing: 5.0,
-            alignment: WrapAlignment.center,
-            children: availableSlots.map((slot) {
-              return SizedBox(
-                width: MediaQuery.of(context).size.width * 0.45,
-                child: ChoiceChip(
-                  backgroundColor: whiteColor,
-                  label: Container(
-                    alignment: Alignment.center,
-                    height: 25,
-                    child: Text(
-                      slot['label'],
-                      style: TextStyle(
-                          fontSize: 14,
-                          color: selectedTimeSlot == slot['value'].toString()
-                              ? whiteColor
-                              : blackColor,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  labelPadding: EdgeInsets.zero,
-                  selected: selectedTimeSlot == slot['value'].toString(),
-                  selectedColor: primaryColor,
-                  showCheckmark: false,
-                  onSelected: (bool selected) {
-                    if (selected) {
-                      lockSlotTemporarily(slot['value'].toString());
-                    }
-                  },
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    side: const BorderSide(
-                      color: primaryColor,
-                      width: 1.0,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> handleAppointmentSubmit() async {
-    setState(() {
-      isLoading = true;
-    });
-    String patientPassword = generatePassword();
-
-    final appointmentData = {
-      'patient_name': _patientNameController.text,
-      'patient_email': _patientEmailController.text,
-      'patient_phone': _patientPhoneController.text,
-      'patient_username': _patientEmailController.text,
-      'patient_password': patientPassword,
-      'department_id': int.tryParse(selectedDepartment ?? '0'),
-      'doctor_id': int.tryParse(selectedDoctor ?? '0'),
-      'medical_day': selectedDay,
-      'slot': int.tryParse(selectedTimeSlot ?? '0'),
-      'appointment_date': DateTime.now().toIso8601String(),
-    };
-
-    final url = Uri.parse(
-        'http://10.0.2.2:8081/api/v1/appointments/insert');
-    try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(appointmentData),
-      );
-
-      if (response.statusCode == 200) {
-        setState(() {
-          showSuccess = true;
-          setState(() {
-            isLoading = false;
-          });
-          showTemporaryMessage(context, "Appointment booked successfully!");
-        });
-      } else {
-        showTemporaryMessage(
-            context, "Booking appointment failed. Please try again.");
-        setState(() {
-          isLoading = false;
-        });
-      }
-    } catch (error) {
-      showTemporaryMessage(
-          context, "Error during booking appointment. Please try again.");
-      print('Error: $error');
-      setState(() {
-        isLoading = false;
-      });
-    }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    _removeDepartmentOverlay();
-    _removeDoctorOverlay();
+    _departmentSearchController.dispose();
     _departmentFocusNode.dispose();
-    _doctorFocusNode.dispose();
-    departmentController.dispose();
-    doctorController.dispose();
     super.dispose();
   }
 
@@ -1554,12 +2043,12 @@ class _AppointmentState extends State<Appointment> {
               alignment: Alignment.center,
               child: Text(
                 step == 1
-                    ? 'Select Department & Doctor'
+                    ? 'Book Appointment'
                     : step == 2
-                    ? 'Fill Patient Information'
+                    ? 'Patient Information'
                     : showSuccess
                     ? 'Appointment Success'
-                    : 'Confirm Booking Information',
+                    : 'Payment & Confirmation',
                 style: const TextStyle(
                   color: whiteColor,
                   fontWeight: FontWeight.bold,
@@ -1569,7 +2058,6 @@ class _AppointmentState extends State<Appointment> {
             ),
             backgroundColor: primaryColor,
           ),
-
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -1578,95 +2066,107 @@ class _AppointmentState extends State<Appointment> {
                 StepBar(
                   currentStep: showSuccess ? 4 : step,
                   totalSteps: 3,
-                  stepLabels: const ['Step 1', 'Step 2', 'Step 3'],
+                  stepLabels: const ['Select & Book', 'Patient Info', 'Payment'],
                 ),
                 const SizedBox(height: 20),
                 showSuccess
                     ? Center(
-                        child: Container(
+                  child: Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(top: 20),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.check_circle,
+                            size: 60, color: Colors.green),
+                        const SizedBox(height: 10),
+                        const Text('Appointment booked and paid successfully!',
+                            style: TextStyle(
+                                fontSize: 20,
+                                color: blackColor,
+                                fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 40),
+                        Container(
                           width: double.infinity,
                           margin: const EdgeInsets.only(top: 20),
-                          child: Column(
-                            children: [
-                              const Icon(Icons.check_circle,
-                                  size: 60, color: Colors.green),
-                              const SizedBox(height: 10),
-                              const Text('Appointment booked successfully!',
-                                  style: TextStyle(
-                                      fontSize: 20,
-                                      color: blackColor,
-                                      fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 40),
-                              Container(
-                                width: double.infinity,
-                                margin: const EdgeInsets.only(top: 20),
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: primaryColor,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(15),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 15),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                        context, '/appointment_list');
-                                  },
-                                  child: const Text(
-                                    'View Appointment',
-                                    style: TextStyle(
-                                        color: whiteColor,
-                                        fontSize: 16.0,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                ),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
                               ),
-                              Container(
-                                width: double.infinity,
-                                margin: const EdgeInsets.only(top: 20),
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: whiteColor,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(15),
-                                    ),
-                                    side: BorderSide(
-                                        color: primaryColor, width: 0.5),
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 15),
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      step = 1;
-                                      showSuccess = false;
-                                    });
-                                  },
-                                  child: const Text(
-                                    'Booking another appointment',
-                                    style: TextStyle(
-                                        color: primaryColor,
-                                        fontSize: 16.0,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ),
-                            ],
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 15),
+                            ),
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                  context, '/appointment_list');
+                            },
+                            child: const Text(
+                              'View Appointment',
+                              style: TextStyle(
+                                  color: whiteColor,
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.bold),
+                            ),
                           ),
                         ),
-                      )
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(top: 20),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: whiteColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              side: const BorderSide(
+                                  color: primaryColor, width: 0.5),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 15),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                step = 1;
+                                showSuccess = false;
+                                selectedDay = null;
+                                selectedTimeSlot = null;
+                                selectedDepartment = null;
+                                selectedDoctor = null;
+                                isDateSelected = false;
+                                isTimeSelected = false;
+                                _patientNameController.clear();
+                                _patientEmailController.clear();
+                                _patientPhoneController.clear();
+                                // Reset auto-load states
+                                isPatientDataLoaded = false;
+                                isLoadingPatientData = false;
+                              });
+                            },
+                            child: const Text(
+                              'Book Another Appointment',
+                              style: TextStyle(
+                                  color: primaryColor,
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
                     : step == 1
-                        ? buildFormStep1()
-                        : step == 2
-                            ? buildFormStep2()
-                            : buildFormStep3(),
+                    ? buildFormStep1()
+                    : step == 2
+                    ? buildFormStep2()
+                    : buildFormStep3(),
                 const SizedBox(height: 30),
               ],
             ),
           ),
         ),
 
-        // Lớp phủ loading toàn màn hình
+        // Loading overlay
         if (isLoading)
           Positioned.fill(
             child: Container(

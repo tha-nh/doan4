@@ -108,20 +108,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       // Reschedule notifications with new settings if doctor ID is available
       if (_doctorId != null) {
-        _showSnackBar('Đang cập nhật lịch thông báo...', Colors.blue);
+        _showSnackBar('Updating announcement schedule...', Colors.blue);
 
         try {
           await _appointmentService.refreshAppointments(_doctorId!);
-          _showSnackBar('Đã lưu cài đặt và cập nhật thông báo thành công', Colors.green);
+          _showSnackBar('Settings saved and notification updated successfully', Colors.green);
         } catch (e) {
-          print('Lỗi khi cập nhật thông báo: $e');
-          _showSnackBar('Đã lưu cài đặt nhưng có lỗi khi cập nhật thông báo', Colors.orange);
+          print('Error updating notification: $e');
+          _showSnackBar('Settings saved but error updating notification', Colors.orange);
         }
       } else {
-        _showSnackBar('Đã lưu cài đặt thành công', Colors.green);
+        _showSnackBar('Settings saved successfully', Colors.green);
       }
     } catch (e) {
-      _showSnackBar('Lỗi khi lưu cài đặt: $e', Colors.red);
+      _showSnackBar('Error saving settings: $e', Colors.red);
     }
   }
 
@@ -152,7 +152,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         });
       }
     } catch (e) {
-      print('Lỗi khi kiểm tra quyền: $e');
+      print('Error checking permissions: $e');
     }
   }
 
@@ -170,13 +170,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         });
 
         if (result.isGranted) {
-          _showSnackBar('Đã cấp quyền thông báo chính xác', Colors.green);
+          _showSnackBar('Correct notification permission granted', Colors.green);
         } else {
           _showExactAlarmPermissionDialog();
         }
       }
     } catch (e) {
-      _showSnackBar('Lỗi khi yêu cầu quyền: $e', Colors.red);
+      _showSnackBar('Error requesting permission: $e', Colors.red);
     }
   }
 
@@ -186,28 +186,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(
-            'Cần quyền thông báo chính xác',
+            'Need accurate notification rights',
             style: GoogleFonts.lora(fontWeight: FontWeight.bold),
           ),
           content: Text(
-            'Để nhận thông báo đúng giờ, vui lòng:\n\n'
-                '1. Vào Cài đặt > Ứng dụng\n'
-                '2. Tìm ứng dụng này\n'
-                '3. Chọn "Quyền đặc biệt"\n'
-                '4. Bật "Báo thức và nhắc nhở"',
+            'To receive timely notifications, please:\n\n'
+                '1. Go to Settings > Apps\n'
+                '2. Find this app\n'
+                '3. Select "Special permissions"\n'
+                '4. Turn on "Alarms and reminders"',
             style: GoogleFonts.lora(),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('Đã hiểu', style: GoogleFonts.lora()),
+              child: Text('Understood', style: GoogleFonts.lora()),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 openAppSettings();
               },
-              child: Text('Mở cài đặt', style: GoogleFonts.lora()),
+              child: Text('Open settings', style: GoogleFonts.lora()),
             ),
           ],
         );
@@ -244,7 +244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: backgroundColor,
       appBar: AppBar(
         title: Text(
-          'Cài Đặt',
+          'Setting',
           style: GoogleFonts.lora(
             fontSize: 24,
             fontWeight: FontWeight.w700,
@@ -254,14 +254,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          // Nút xem thông báo đã lập lịch
-          IconButton(
-            onPressed: _viewScheduledNotifications,
-            icon: const Icon(Icons.schedule),
-            tooltip: 'Xem thông báo đã lập lịch',
-          ),
-        ],
+        // actions: [
+        //   // Nút xem thông báo đã lập lịch
+        //   IconButton(
+        //     onPressed: _viewScheduledNotifications,
+        //     icon: const Icon(Icons.schedule),
+        //     tooltip: 'View scheduled notifications',
+        //   ),
+        // ],
       ),
       floatingActionButton: Row(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -274,7 +274,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               foregroundColor: Colors.white,
               icon: const Icon(Icons.refresh),
               label: Text(
-                'Đặt lại',
+                'Reset',
                 style: GoogleFonts.lora(fontWeight: FontWeight.w600),
               ),
               heroTag: "reset",
@@ -288,7 +288,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             foregroundColor: Colors.white,
             icon: const Icon(Icons.save),
             label: Text(
-              'Lưu cài đặt',
+              'Save settings',
               style: GoogleFonts.lora(fontWeight: FontWeight.w600),
             ),
             heroTag: "save",
@@ -317,7 +317,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Bạn có thay đổi chưa được lưu. Nhấn "Lưu cài đặt" để áp dụng.',
+                        'You have unsaved changes. Click "Save Settings" to apply.',
                         style: GoogleFonts.lora(
                           fontSize: 14,
                           color: Colors.orange[700],
@@ -331,8 +331,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildNotificationSection(),
             const SizedBox(height: 24),
             _buildPermissionSection(),
-            const SizedBox(height: 24),
-            _buildNotificationManagementSection(),
+            // const SizedBox(height: 24),
+            // _buildNotificationManagementSection(),
             const SizedBox(height: 24),
             _buildAboutSection(),
             const SizedBox(height: 80),
@@ -357,7 +357,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Icon(Icons.notifications, color: primaryColor, size: 24),
                 const SizedBox(width: 8),
                 Text(
-                  'Cài Đặt Thông Báo',
+                  'Notification Settings',
                   style: GoogleFonts.lora(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -370,11 +370,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             SwitchListTile(
               title: Text(
-                'Bật thông báo lịch khám',
+                'Turn on appointment notification',
                 style: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w500),
               ),
               subtitle: Text(
-                'Nhận thông báo về lịch khám sắp tới',
+                'Get notified about upcoming appointments',
                 style: GoogleFonts.lora(fontSize: 14, color: Colors.grey[600]),
               ),
               value: _notificationsEnabled,
@@ -391,11 +391,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               ListTile(
                 title: Text(
-                  'Thời gian nhắc nhở',
+                  'Reminder Time',
                   style: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
                 subtitle: Text(
-                  'Nhận thông báo trước $_reminderMinutes phút',
+                  'Get notified $_reminderMinutes minutes in advance',
                   style: GoogleFonts.lora(fontSize: 14, color: Colors.grey[600]),
                 ),
                 trailing: DropdownButton<int>(
@@ -404,7 +404,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     return DropdownMenuItem<int>(
                       value: minutes,
                       child: Text(
-                        '$minutes phút',
+                        '$minutes minutes',
                         style: GoogleFonts.lora(),
                       ),
                     );
@@ -421,11 +421,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               SwitchListTile(
                 title: Text(
-                  'Thông báo khi đến giờ khám',
+                  'Notification When It\'s Time for Your Appointment',
                   style: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
+
                 subtitle: Text(
-                  'Nhận thông báo "Đã đến giờ khám" ',
+                  'Get notified "It\'s time for your appointment"" ',
                   style: GoogleFonts.lora(fontSize: 14, color: Colors.grey[600]),
                 ),
                 value: _exactTimeNotification,
@@ -458,7 +459,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Icon(Icons.security, color: primaryColor, size: 24),
                 const SizedBox(width: 8),
                 Text(
-                  'Quyền Ứng Dụng',
+                  'Application Permissions',
                   style: GoogleFonts.lora(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -475,13 +476,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: _hasExactAlarmPermission ? Colors.green : Colors.orange,
               ),
               title: Text(
-                'Thông báo chính xác',
+                'Correct notice',
                 style: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w500),
               ),
               subtitle: Text(
                 _hasExactAlarmPermission
-                    ? 'Đã cấp quyền '
-                    : 'Chưa cấp quyền ',
+                    ? 'Permission granted'
+                    : 'Permission not granted',
                 style: GoogleFonts.lora(
                   fontSize: 14,
                   color: _hasExactAlarmPermission ? Colors.green : Colors.orange,
@@ -495,7 +496,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
                 ),
-                child: Text('Cấp quyền', style: GoogleFonts.lora()),
+                child: Text('Grant permissions', style: GoogleFonts.lora()),
               ),
             ),
           ],
@@ -504,57 +505,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildNotificationManagementSection() {
-    return Card(
-      color: cardColor,
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.manage_history, color: primaryColor, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  'Quản Lý Thông Báo',
-                  style: GoogleFonts.lora(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: primaryColor,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.schedule, color: primaryColor),
-              ),
-              title: Text(
-                'Xem thông báo đã lập lịch',
-                style: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
-              subtitle: Text(
-                'Xem danh sách các thông báo đang chờ được gửi',
-                style: GoogleFonts.lora(fontSize: 14, color: Colors.grey[600]),
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: _viewScheduledNotifications,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildNotificationManagementSection() {
+  //   return Card(
+  //     color: cardColor,
+  //     elevation: 2,
+  //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(16),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Row(
+  //             children: [
+  //               Icon(Icons.manage_history, color: primaryColor, size: 24),
+  //               const SizedBox(width: 8),
+  //               Text(
+  //                 'Notification Management',
+  //                 style: GoogleFonts.lora(
+  //                   fontSize: 18,
+  //                   fontWeight: FontWeight.w600,
+  //                   color: primaryColor,
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //           const SizedBox(height: 16),
+  //
+  //           ListTile(
+  //             leading: Container(
+  //               padding: const EdgeInsets.all(8),
+  //               decoration: BoxDecoration(
+  //                 color: primaryColor.withOpacity(0.1),
+  //                 borderRadius: BorderRadius.circular(8),
+  //               ),
+  //               child: Icon(Icons.schedule, color: primaryColor),
+  //             ),
+  //             title: Text(
+  //               'View scheduled notifications',
+  //               style: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w500),
+  //             ),
+  //             subtitle: Text(
+  //               'View list of notifications waiting to be sent',
+  //               style: GoogleFonts.lora(fontSize: 14, color: Colors.grey[600]),
+  //             ),
+  //             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+  //             onTap: _viewScheduledNotifications,
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildAboutSection() {
     return Card(
@@ -571,7 +572,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Icon(Icons.info, color: primaryColor, size: 24),
                 const SizedBox(width: 8),
                 Text(
-                  'Thông Tin',
+                  'Information',
                   style: GoogleFonts.lora(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -583,22 +584,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 16),
 
             Text(
-              'Hệ thống thông báo sẽ gửi:',
+              'The notification system will send:',
               style: GoogleFonts.lora(fontSize: 16, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 8),
 
             if (_notificationsEnabled) ...[
-              _buildInfoItem('• Thông báo $_reminderMinutes phút trước giờ khám để chuẩn bị'),
+              _buildInfoItem('• Notify $_reminderMinutes minutes before the appointment time to prepare'),
               if (_exactTimeNotification)
-                _buildInfoItem('• Thông báo "Đã đến giờ khám" '),
+                _buildInfoItem('• "Time for examination" notification '),
             ] else ...[
-              _buildInfoItem('• Thông báo đã bị tắt'),
+              _buildInfoItem('• Notifications have been disabled'),
             ],
 
             const SizedBox(height: 12),
             Text(
-              'Lưu ý: Để thông báo hoạt động tốt nhất, hãy đảm bảo ứng dụng không bị tối ưu hóa pin.',
+              'Note: For notifications to work best, make sure the app is not battery optimized.',
               style: GoogleFonts.lora(
                 fontSize: 12,
                 color: Colors.grey[600],

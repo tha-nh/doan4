@@ -33,16 +33,31 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool isLoggedIn = true; // Đặt mặc định là true để bỏ qua login
-  bool isLoading = true;
-  int? patientId = 1; // Đặt patientId mặc định
+  bool isLoggedIn = false;
+  int? patientId;
   int _selectedIndex = 0;
   bool _showExtraButtons = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool savedLoginStatus = prefs.getBool('isLoggedIn') ?? false;
+    int? savedPatientId = prefs.getInt('patient_id');
+
+    setState(() {
+      isLoggedIn = savedLoginStatus;
+      patientId = savedPatientId;
+    });
+  }
 
   Future<void> handleLogin(BuildContext context, int patientId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    // Lưu thông tin đăng nhập vào SharedPreferences
     await prefs.setBool('isLoggedIn', true);
     await prefs.setInt('patient_id', patientId);
 
@@ -52,25 +67,6 @@ class _MyAppState extends State<MyApp> {
         this.patientId = patientId;
       });
     }
-  }
-
-  void checkLoginStatus() async {
-    // Bỏ qua việc kiểm tra SharedPreferences, luôn đặt là đã đăng nhập
-
-    // Thêm delay để hiển thị loading screen
-    await Future.delayed(const Duration(seconds: 2));
-
-    setState(() {
-      isLoggedIn = true; // Luôn đặt là true
-      patientId = 1; // Đặt patientId mặc định
-      isLoading = false;
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    checkLoginStatus();
   }
 
   void handleLogout(BuildContext context) async {
@@ -90,233 +86,14 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       if (index == 3) {
         _showExtraButtons = !_showExtraButtons;
+      } else if (index == 2) {
+        // Do nothing for booking tab - make it non-functional
+        return;
       } else {
         _selectedIndex = index;
         _showExtraButtons = false;
       }
     });
-  }
-
-
-
-  // Widget cho Loading Screen với thiết kế đẹp
-  Widget _buildLoadingScreen() {
-    return Scaffold(
-      backgroundColor: whiteColor,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              whiteColor,
-              Color(0xFFF8FBFF),
-              Color(0xFFF0F8FF),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header với animation
-              Expanded(
-                flex: 2,
-                child: Container(
-                  width: double.infinity,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Logo container với hiệu ứng đẹp
-                      Container(
-                        width: 140,
-                        height: 140,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              primaryColor,
-                              primaryColor.withOpacity(0.8),
-                              Color(0xFF006BB3),
-                            ],
-                          ),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: primaryColor.withOpacity(0.3),
-                              spreadRadius: 0,
-                              blurRadius: 20,
-                              offset: const Offset(0, 8),
-                            ),
-                            BoxShadow(
-                              color: primaryColor.withOpacity(0.1),
-                              spreadRadius: 0,
-                              blurRadius: 40,
-                              offset: const Offset(0, 16),
-                            ),
-                          ],
-                        ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: whiteColor.withOpacity(0.3),
-                              width: 2,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.local_hospital,
-                            size: 70,
-                            color: whiteColor,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 30),
-
-                      // Tên app với hiệu ứng
-                      ShaderMask(
-                        shaderCallback: (bounds) => LinearGradient(
-                          colors: [
-                            primaryColor,
-                            Color(0xFF006BB3),
-                          ],
-                        ).createShader(bounds),
-                        child: const Text(
-                          'eSavior',
-                          style: TextStyle(
-                            fontSize: 38,
-                            fontWeight: FontWeight.w800,
-                            color: whiteColor,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Slogan với style đẹp
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: const Text(
-                          'Chăm sóc sức khỏe của bạn',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Color(0xFF64748B),
-                            fontWeight: FontWeight.w400,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Loading section với animation đẹp
-              Expanded(
-                flex: 1,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Loading indicator với container đẹp
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        // color: whiteColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.1),
-                            spreadRadius: 0,
-                            blurRadius: 15,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: SizedBox(
-                          width: 40,
-                          height: 40,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 3.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
-                            backgroundColor: primaryColor.withOpacity(0.1),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Loading text
-                    const Text(
-                      'Đang tải...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // Subtitle
-                    const Text(
-                      'Chuẩn bị mọi thứ cho bạn',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF94A3B8),
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Footer
-              Container(
-                padding: const EdgeInsets.only(bottom: 30),
-                child: Column(
-                  children: [
-                    // Dots indicator
-                    // Row(
-                    //   mainAxisAlignment: MainAxisAlignment.center,
-                    //   children: List.generate(3, (index) {
-                    //     return Container(
-                    //       margin: const EdgeInsets.symmetric(horizontal: 4),
-                    //       width: 8,
-                    //       height: 8,
-                    //       decoration: BoxDecoration(
-                    //         color: index == 0 ? primaryColor : primaryColor.withOpacity(0.3),
-                    //         shape: BoxShape.circle,
-                    //       ),
-                    //     );
-                    //   }),
-                    // ),
-                    //
-                    // const SizedBox(height: 20),
-
-                    // Version text
-                    const Text(
-                      'Version 1.0.0',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFFCBD5E1),
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   @override
@@ -369,15 +146,25 @@ class _MyAppState extends State<MyApp> {
         ),
         '/emergency_booking': (context) => EmergencyBooking(),
         '/nonEmergency_booking': (context) => NonEmergencyBooking(),
+        '/appointment_booking': (context) => Appointment(
+          isLoggedIn: isLoggedIn,
+          onLogout: () => handleLogout(context),
+          patientId: patientId,
+          onNavigateToHomePage: () {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/',
+                  (route) => false,
+            );
+          },
+        ),
       },
       title: 'eSavior',
       theme: ThemeData(
         primarySwatch: Colors.red,
         fontFamily: 'Nunito',
       ),
-      home: isLoading
-          ? _buildLoadingScreen()
-          : _buildMainApp(), // Bỏ điều kiện kiểm tra isLoggedIn
+      home: _buildMainApp(),
     );
   }
 
@@ -385,7 +172,6 @@ class _MyAppState extends State<MyApp> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: whiteColor,
-
       body: IndexedStack(
         index: _selectedIndex,
         children: [
@@ -397,6 +183,11 @@ class _MyAppState extends State<MyApp> {
               onNavigateToDiagnosis: () {
                 setState(() {
                   _selectedIndex = 1;
+                });
+              },
+              onNavigateToAppointment: () {
+                setState(() {
+                  _selectedIndex = 2;
                 });
               },
             ),
@@ -449,13 +240,18 @@ class _MyAppState extends State<MyApp> {
             label: 'Diagnosis',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month),
-            label: 'Medical',
+            icon: Icon(Icons.calendar_month, color: Colors.transparent), // Make transparent
+            label: 'Booking', // Remove label
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.car_crash),
-            label: 'Booking',
+            icon: ImageIcon(
+              NetworkImage('https://img.icons8.com/ios-filled/50/FFFFFF/ambulance--v1.png'),
+              size: 25, // có thể chỉnh size ở đây
+
+            ),
+            label: 'Ambulance',
           ),
+
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profile',
@@ -550,7 +346,7 @@ class _MyAppState extends State<MyApp> {
             });
           },
           backgroundColor: primaryColor,
-          child: const Icon(Icons.local_hospital, color: whiteColor, size: 30),
+          child: const Icon(Icons.local_hospital, color: whiteColor, size: 35),
         ),
         if (_showExtraButtons) const SizedBox(height: 30)
       ],

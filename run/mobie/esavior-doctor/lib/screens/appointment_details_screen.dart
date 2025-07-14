@@ -26,7 +26,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
     if (slot is int && slot >= 1 && slot <= 8) {
       return '${timeSlots[slot - 1]}:00';
     }
-    return 'Chưa xác định';
+    return 'Not determined';
   }
 
   // Color palette
@@ -78,13 +78,13 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
         });
       } else {
         setState(() {
-          _errorMessage = 'Lỗi khi tải chi tiết lịch hẹn: ${response.statusCode}';
+          _errorMessage = 'Error loading appointment details: ${response.statusCode}';
           _isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Lỗi kết nối. Vui lòng thử lại!';
+        _errorMessage = 'Connection error. Please try again.!';
         _isLoading = false;
       });
     }
@@ -114,7 +114,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Cập nhật trạng thái thành công: $newStatus',
+              'Status update successful: $newStatus',
               style: GoogleFonts.lora(
                 fontSize: 14,
                 color: Colors.white,
@@ -128,13 +128,13 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
         await _fetchAppointmentDetails();
       } else {
         setState(() {
-          _errorMessage = 'Lỗi khi cập nhật trạng thái: ${response.statusCode}';
+          _errorMessage = 'Error while updating status: ${response.statusCode}';
           _isUpdating = false;
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Lỗi kết nối khi cập nhật trạng thái. Vui lòng thử lại!';
+        _errorMessage = 'Connection error while updating status. Please try again.!';
         _isUpdating = false;
       });
     }
@@ -191,18 +191,16 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
   Widget build(BuildContext context) {
     final appointment = _appointmentDetails ?? widget.appointment;
     final patientName = appointment['patient'] != null && appointment['patient'].isNotEmpty
-        ? appointment['patient'][0]['patient_name']?.toString() ?? 'Bệnh nhân ID: ${appointment['patient_id']?.toString() ?? 'Không xác định'}'
-        : 'Bệnh nhân ID: ${appointment['patient_id']?.toString() ?? 'Không xác định'}';
-    final doctorName = appointment['doctor'] != null && appointment['doctor'].isNotEmpty
-        ? appointment['doctor'][0]['doctor_name']?.toString() ?? 'Không xác định'
-        : 'Không xác định';
-    final status = appointment['status']?.toString() ?? 'Chưa xác định';
+        ? appointment['patient'][0]['patient_name']?.toString() ?? ' ${appointment['patient_id']?.toString() ?? 'Loading...'}'
+        : ' ${appointment['patient_id']?.toString() ?? 'Loading...'}';
+
+    final status = appointment['status']?.toString() ?? 'Loading...';
 
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
         title: Text(
-          'Hồ Sơ Lịch Hẹn',
+          'Appointment Details',
           style: GoogleFonts.lora(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -258,7 +256,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
                 ),
                 icon: const Icon(Icons.refresh, size: 20),
                 label: Text(
-                  'Thử lại',
+                  'Retry',
                   style: GoogleFonts.lora(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -275,23 +273,19 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildPatientHeader(patientName, appointment['patient_id']?.toString()),
+                _buildPatientHeader(patientName),
                 const SizedBox(height: 20),
-                _buildSectionHeader('Thông Tin Bác Sĩ'),
-                const SizedBox(height: 12),
-                _buildDoctorHeader(doctorName),
-                const SizedBox(height: 20),
-                _buildSectionHeader('Chi Tiết Lịch Hẹn'),
+                _buildSectionHeader('Appointment Details'),
                 const SizedBox(height: 12),
                 _buildDetailCard([
-                  _buildDetailRow('Mã lịch hẹn', appointment['appointment_id']?.toString() ?? 'Không xác định'),
-                  _buildDetailRow('Ngày đặt', _formatDate(appointment['appointment_date']?.toString())),
-                  _buildDetailRow('Ngày khám', _formatDate(appointment['medical_day']?.toString())),
-                  _buildDetailRow('Khung giờ', getTimeSlot(appointment['slot'])),
-                  _buildDetailRow('Trạng thái', status),
-                  _buildDetailRow('Thanh toán', appointment['payment_name']?.toString() ?? 'Chưa có'),
-                  _buildDetailRow('Nhân viên phụ trách', appointment['staff_id']?.toString() ?? 'Chưa có'),
-                  _buildDetailRow('Giá', '${appointment['price']?.toInt().toString() ?? '0'} VND'),
+
+                  _buildDetailRow('Booking date', _formatDate(appointment['appointment_date']?.toString())),
+                  _buildDetailRow('Date of examination', _formatDate(appointment['medical_day']?.toString())),
+                  _buildDetailRow('Time frame', getTimeSlot(appointment['slot'])),
+                  _buildDetailRow('Status', status),
+                  _buildDetailRow('Payment type', appointment['payment_name']?.toString() ?? ''),
+                  _buildDetailRow('Officer in charge', appointment['staff_id']?.toString() ?? ''),
+                  _buildDetailRow('Price', '\$${appointment['price']?.toInt().toString() ?? '0'}'),
                 ]),
                 if (status == 'PENDING') ...[
                   const SizedBox(height: 12),
@@ -305,7 +299,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
     );
   }
 
-  Widget _buildPatientHeader(String patientName, String? patientId) {
+  Widget _buildPatientHeader(String patientName) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -343,14 +337,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
                     color: textColor,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'ID: ${patientId ?? 'Không xác định'}',
-                  style: GoogleFonts.lora(
-                    fontSize: 16,
-                    color: Colors.black54,
-                  ),
-                ),
+
               ],
             ),
           ),
@@ -518,9 +505,9 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
         if (hasTimePassed)
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: _isUpdating ? null : () => _updateStatus('CONFIRMED'),
+              onPressed: _isUpdating ? null : () => _updateStatus('COMPLETED'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
+                backgroundColor: Colors.green,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 shape: RoundedRectangleBorder(
@@ -539,7 +526,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
               )
                   : const Icon(Icons.check_circle, size: 20),
               label: Text(
-                'CONFIRMED',
+                'COMPLETED',
                 style: GoogleFonts.lora(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,

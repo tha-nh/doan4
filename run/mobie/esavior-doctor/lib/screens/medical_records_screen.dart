@@ -18,6 +18,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
     with SingleTickerProviderStateMixin {
   final _storage = const FlutterSecureStorage();
   List records = [];
+  Map<String, List> groupedRecords = {}; // New: Group records by patient
   int? doctorId;
   bool _isLoading = true;
   String? _errorMessage;
@@ -96,7 +97,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Lỗi khi tải thông tin. Vui lòng thử lại!';
+        _errorMessage = 'Error loading information. Please try again!';
       });
     } finally {
       setState(() {
@@ -111,73 +112,110 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final List<dynamic> fetchedRecords = jsonDecode(response.body);
+        print(fetchedRecords);
         final DateTime now = DateTime.now();
         final DateTime effectiveStartDate = startDate ?? now.subtract(const Duration(days: 30));
         final DateTime effectiveEndDate = endDate ?? now;
 
+        // Filter records by date
+        final filteredRecords = fetchedRecords.where((r) {
+          final recordDate = DateTime.tryParse(r['follow_up_date'] ?? '') ?? DateTime(1970, 1, 1);
+          return (recordDate.isAtSameMomentAs(effectiveStartDate) || recordDate.isAfter(effectiveStartDate)) &&
+              (recordDate.isAtSameMomentAs(effectiveEndDate) || recordDate.isBefore(effectiveEndDate));
+        }).toList();
+
+        // Group records by patient
+        _groupRecordsByPatient(filteredRecords);
+
         setState(() {
-          records = fetchedRecords.where((r) {
-            final recordDate = DateTime.tryParse(r['follow_up_date'] ?? '') ?? DateTime(1970, 1, 1);
-            return (recordDate.isAtSameMomentAs(effectiveStartDate) || recordDate.isAfter(effectiveStartDate)) &&
-                (recordDate.isAtSameMomentAs(effectiveEndDate) || recordDate.isBefore(effectiveEndDate));
-          }).toList()
-            ..sort((a, b) {
-              final dateA = DateTime.tryParse(a['follow_up_date'] ?? '') ?? DateTime(1970, 1, 1);
-              final dateB = DateTime.tryParse(b['follow_up_date'] ?? '') ?? DateTime(1970, 1, 1);
-              return dateB.compareTo(dateA);
-            });
+          records = filteredRecords;
           _errorMessage = null;
         });
       } else {
         setState(() {
-          _errorMessage = 'Lỗi khi tải danh sách hồ sơ bệnh án';
+          _errorMessage = 'Error loading medical records list';
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Lỗi kết nối. Vui lòng thử lại!';
+        _errorMessage = 'Connection error. Please try again!';
       });
     }
   }
 
-  List _getFilteredRecords() {
-    return records.where((record) {
-      final matchesSearch = _searchQuery.isEmpty ||
-          (record['patient_id']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
-          (record['symptoms']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
-          (record['diagnosis']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
+  // New method to group records by patient
+  void _groupRecordsByPatient(List<dynamic> records) {
+    groupedRecords.clear();
 
-      return matchesSearch;
-    }).toList();
+    for (var record in records) {
+      String patientKey = '';
+      String patientName = '';
+
+      // Get patient info
+      if (record['patients'] != null && record['patients'].isNotEmpty) {
+        patientName = record['patients'][0]['patient_name'] ?? '';
+        String patientId = record['patients'][0]['patient_id']?.toString() ?? '';
+        patientKey = '$patientId-$patientName';
+      } else {
+        patientKey = 'unknown-${record['patient_id'] ?? ''}';
+        patientName = '';
+      }
+
+      if (!groupedRecords.containsKey(patientKey)) {
+        groupedRecords[patientKey] = [];
+      }
+
+      groupedRecords[patientKey]!.add(record);
+    }
+
+    // Sort records within each patient group by date (newest first)
+    groupedRecords.forEach((key, patientRecords) {
+      patientRecords.sort((a, b) {
+        final dateA = DateTime.tryParse(a['follow_up_date'] ?? '') ?? DateTime(1970, 1, 1);
+        final dateB = DateTime.tryParse(b['follow_up_date'] ?? '') ?? DateTime(1970, 1, 1);
+        return dateB.compareTo(dateA);
+      });
+    });
+  }
+
+  Map<String, List> _getFilteredGroupedRecords() {
+    if (_searchQuery.isEmpty) {
+      return groupedRecords;
+    }
+
+    Map<String, List> filtered = {};
+
+    groupedRecords.forEach((patientKey, patientRecords) {
+      List matchingRecords = patientRecords.where((record) {
+        final matchesSearch =
+            (record['patient_id']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
+                (record['symptoms']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
+                (record['diagnosis']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
+                (patientKey.toLowerCase().contains(_searchQuery.toLowerCase()));
+
+        return matchesSearch;
+      }).toList();
+
+      if (matchingRecords.isNotEmpty) {
+        filtered[patientKey] = matchingRecords;
+      }
+    });
+
+    return filtered;
   }
 
   Color _getSeverityColor(String? severity) {
     switch (severity?.toLowerCase()) {
-      case 'nhẹ':
+      case 'light':
         return successColor;
-      case 'trung bình':
+      case 'medium':
         return warningColor;
-      case 'nặng':
+      case 'heavy':
         return Colors.deepOrange;
-      case 'rất nặng':
+      case 'very heavy':
         return errorColor;
       default:
         return Colors.grey;
-    }
-  }
-
-  IconData _getSeverityIcon(String? severity) {
-    switch (severity?.toLowerCase()) {
-      case 'nhẹ':
-        return Icons.sentiment_satisfied;
-      case 'trung bình':
-        return Icons.sentiment_neutral;
-      case 'nặng':
-        return Icons.sentiment_dissatisfied;
-      case 'rất nặng':
-        return Icons.sentiment_very_dissatisfied;
-      default:
-        return Icons.help_outline;
     }
   }
 
@@ -223,9 +261,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
             ? _buildErrorState()
             : Column(
           children: [
-            // Thanh tìm kiếm độc lập
-            _buildSearchBar(),
-            // Nhóm header, filters và records list trong ListView để cuộn cùng nhau
+            // _buildSearchBar(),
             Expanded(
               child: FadeTransition(
                 opacity: _fadeAnimation,
@@ -235,7 +271,9 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
                     children: [
                       _buildHeader(),
                       _buildFilters(),
-                      _buildRecordsList(),
+                      _buildSearchBar(),
+                      const SizedBox(height: 10),
+                      _buildGroupedRecordsList(), // Updated method
                     ],
                   ),
                 ),
@@ -258,7 +296,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            'Đang tải hồ sơ bệnh án...',
+            'Loading medical records...',
             style: GoogleFonts.lora(
               fontSize: 16,
               color: Colors.grey[600],
@@ -290,7 +328,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
             ),
             const SizedBox(height: 24),
             Text(
-              'Oops! Có lỗi xảy ra',
+              'Oops! An error occurred',
               style: GoogleFonts.lora(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
@@ -321,7 +359,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
               ),
               icon: const Icon(Icons.refresh, size: 20),
               label: Text(
-                'Thử lại',
+                'Retry',
                 style: GoogleFonts.lora(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -374,7 +412,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Hồ Sơ Bệnh Án',
+                      'Medical Records',
                       style: GoogleFonts.lora(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
@@ -382,7 +420,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
                       ),
                     ),
                     Text(
-                      'Quản lý và theo dõi bệnh án',
+                      'Management and monitoring of medical records',
                       style: GoogleFonts.lora(
                         fontSize: 14,
                         color: Colors.white.withOpacity(0.9),
@@ -420,7 +458,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
             children: [
               Expanded(
                 child: _buildDateButton(
-                  label: startDate == null ? 'Từ ngày' : DateFormat('dd/MM/yyyy').format(startDate!),
+                  label: startDate == null ? 'From date' : DateFormat('dd/MM/yyyy').format(startDate!),
                   icon: Icons.calendar_today,
                   onPressed: () => _selectStartDate(),
                 ),
@@ -428,7 +466,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: _buildDateButton(
-                  label: endDate == null ? 'Đến ngày' : DateFormat('dd/MM/yyyy').format(endDate!),
+                  label: endDate == null ? 'To date' : DateFormat('dd/MM/yyyy').format(endDate!),
                   icon: Icons.event,
                   onPressed: () => _selectEndDate(),
                 ),
@@ -476,7 +514,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
           });
         },
         decoration: InputDecoration(
-          hintText: 'Tìm kiếm theo ID bệnh nhân, triệu chứng, chẩn đoán...',
+          hintText: 'Search by patient name, symptoms, diagnosis...',
           hintStyle: GoogleFonts.lora(
             fontSize: 14,
             color: Colors.grey[500],
@@ -512,29 +550,222 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
           fontSize: 14,
           color: textColor,
         ),
+
       ),
     );
   }
 
-  Widget _buildRecordsList() {
-    final filteredRecords = _getFilteredRecords();
+  // New method to build grouped records list
+  Widget _buildGroupedRecordsList() {
+    final filteredGroupedRecords = _getFilteredGroupedRecords();
 
-    if (filteredRecords.isEmpty) {
+    if (filteredGroupedRecords.isEmpty) {
       return _buildEmptyState();
     }
 
     return RefreshIndicator(
+
       onRefresh: fetchRecords,
       color: primaryColor,
       child: ListView.builder(
+
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        physics: const NeverScrollableScrollPhysics(), // Vô hiệu hóa cuộn riêng của ListView.builder
-        shrinkWrap: true, // Đảm bảo ListView chiếm đúng không gian cần thiết
-        itemCount: filteredRecords.length,
+        physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        itemCount: filteredGroupedRecords.length,
         itemBuilder: (context, index) {
-          final record = filteredRecords[index];
-          return _buildRecordCard(record, index);
+          final patientKey = filteredGroupedRecords.keys.elementAt(index);
+          final patientRecords = filteredGroupedRecords[patientKey]!;
+          return _buildPatientGroup(patientKey, patientRecords, index);
         },
+      ),
+    );
+  }
+
+  // New method to build patient group card
+  Widget _buildPatientGroup(String patientKey, List patientRecords, int groupIndex) {
+    final patientName = patientKey.split('-').length > 1
+        ? patientKey.split('-').sublist(1).join('-')
+        : '';
+
+    final recordCount = patientRecords.length;
+    final latestRecord = patientRecords.first;
+
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300 + (groupIndex * 100)),
+      curve: Curves.easeOutCubic,
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Card(
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.all(16),
+          childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+          leading: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.person,
+              color: primaryColor,
+              size: 24,
+            ),
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                patientName,
+                style: GoogleFonts.lora(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                ),
+              ),
+
+            ],
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '$recordCount records',
+                    style: GoogleFonts.lora(
+                      fontSize: 12,
+                      color: primaryColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (latestRecord['follow_up_date'] != null)
+                  Text(
+                    'Latest: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(latestRecord['follow_up_date']))}',
+                    style: GoogleFonts.lora(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          children: patientRecords.map<Widget>((record) {
+            return _buildRecordInGroup(record);
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  // New method to build individual record within a patient group
+  Widget _buildRecordInGroup(dynamic record) {
+    final severity = record['severity']?.toString() ?? '';
+    final severityColor = _getSeverityColor(severity);
+
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MedicalRecordDetailScreen(record: record),
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        record['follow_up_date'] != null
+                            ? DateFormat('dd/MM/yyyy').format(DateTime.parse(record['follow_up_date']))
+                            : '',
+                        style: GoogleFonts.lora(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: textColor,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: severityColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            severity.isNotEmpty ? severity : '',
+                            style: GoogleFonts.lora(
+                              fontSize: 10,
+                              color: severityColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildRecordDetail(
+                  icon: Icons.sick,
+                  label: 'Symptoms',
+                  value: record['symptoms'] ?? '',
+                ),
+                const SizedBox(height: 8),
+                _buildRecordDetail(
+                  icon: Icons.medical_services,
+                  label: 'Diagnosis',
+                  value: record['diagnosis'] ?? '',
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      'View details',
+                      style: GoogleFonts.lora(
+                        fontSize: 12,
+                        color: primaryColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      color: primaryColor,
+                      size: 12,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -560,7 +791,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
             ),
             const SizedBox(height: 24),
             Text(
-              'Không tìm thấy hồ sơ',
+              'No records found',
               style: GoogleFonts.lora(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -569,7 +800,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm',
+              'Try changing your search filters or keywords',
               style: GoogleFonts.lora(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -582,148 +813,6 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
     );
   }
 
-  Widget _buildRecordCard(dynamic record, int index) {
-    final severity = record['severity']?.toString() ?? '';
-    final severityColor = _getSeverityColor(severity);
-    final severityIcon = _getSeverityIcon(severity);
-
-    return AnimatedContainer(
-      duration: Duration(milliseconds: 300 + (index * 100)),
-      curve: Curves.easeOutCubic,
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => MedicalRecordDetailScreen(record: record),
-              ),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                border: Border.all(color: Colors.grey[100]!),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.person,
-                      color: primaryColor,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Bệnh nhân #${record['patient_id'] ?? 'N/A'}',
-                          style: GoogleFonts.lora(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: textColor,
-                          ),
-                        ),
-                        if (record['follow_up_date'] != null)
-                          Text(
-                            DateFormat('dd/MM/yyyy').format(
-                              DateTime.parse(record['follow_up_date']),
-                            ),
-                            style: GoogleFonts.lora(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: severityColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(severityIcon, color: severityColor, size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          severity.isNotEmpty ? severity : 'N/A',
-                          style: GoogleFonts.lora(
-                            fontSize: 12,
-                            color: severityColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _buildRecordDetail(
-                icon: Icons.sick,
-                label: 'Triệu chứng',
-                value: record['symptoms'] ?? 'Chưa có thông tin',
-              ),
-              const SizedBox(height: 8),
-              _buildRecordDetail(
-                icon: Icons.medical_services,
-                label: 'Chẩn đoán',
-                value: record['diagnosis'] ?? 'Chưa có thông tin',
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    'Xem chi tiết',
-                    style: GoogleFonts.lora(
-                      fontSize: 14,
-                      color: primaryColor,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    color: primaryColor,
-                    size: 14,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-    );
-  }
-
   Widget _buildRecordDetail({
     required IconData icon,
     required String label,
@@ -732,7 +821,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: Colors.grey[600], size: 16),
+        Icon(icon, color: Colors.grey[600], size: 14),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
@@ -741,7 +830,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
               Text(
                 label,
                 style: GoogleFonts.lora(
-                  fontSize: 12,
+                  fontSize: 10,
                   color: Colors.grey[600],
                   fontWeight: FontWeight.w500,
                 ),
@@ -749,7 +838,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
               Text(
                 value,
                 style: GoogleFonts.lora(
-                  fontSize: 14,
+                  fontSize: 12,
                   color: textColor,
                   height: 1.3,
                 ),
@@ -788,7 +877,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
         startDate = picked;
       });
       await fetchRecords();
-      _showSnackBar('Đã cập nhật ngày bắt đầu', successColor);
+      _showSnackBar('Start date updated', successColor);
     }
   }
 
@@ -817,7 +906,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
         endDate = picked;
       });
       await fetchRecords();
-      _showSnackBar('Đã cập nhật ngày kết thúc', successColor);
+      _showSnackBar('End date updated', successColor);
     }
   }
 }

@@ -50,12 +50,12 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } else {
         setState(() {
-          _errorMessage = 'Sai tài khoản hoặc mật khẩu';
+          _errorMessage = 'Wrong account or password!';
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Lỗi kết nối. Vui lòng thử lại!';
+        _errorMessage = 'Connection error. Please try again.!';
       });
     } finally {
       setState(() {
@@ -99,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Đăng nhập để quản lý lịch khám',
+                  'Log in to manage your appointment schedule.',
                   style: GoogleFonts.lora(
                     fontSize: 16,
                     color: Colors.grey,
@@ -129,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextField(
                   controller: _usernameController,
                   decoration: InputDecoration(
-                    labelText: 'Tên đăng nhập',
+                    labelText: 'Username',
                     prefixIcon: const Icon(Icons.person, color: Colors.blueAccent),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -147,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextField(
                   controller: _passwordController,
                   decoration: InputDecoration(
-                    labelText: 'Mật khẩu',
+                    labelText: 'Password',
                     prefixIcon: const Icon(Icons.lock, color: Colors.blueAccent),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -191,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       strokeWidth: 2,
                     )
                         : Text(
-                      'Đăng nhập',
+                      'Log in',
                       style: GoogleFonts.lora(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

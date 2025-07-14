@@ -39,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
         doctorId = idString != null ? int.tryParse(idString) : widget.doctorId;
       });
     } catch (e) {
-      _showErrorSnackBar('Lỗi khi tải thông tin: $e');
+      _showErrorSnackBar('Error: $e');
       setState(() {
         doctorId = widget.doctorId;
       });
@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         action: SnackBarAction(
-          label: 'Thử lại',
+          label: 'Retry',
           textColor: Colors.white,
           onPressed: _loadDoctorInfo,
         ),
@@ -124,17 +124,17 @@ class _HomeScreenState extends State<HomeScreen> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.medical_services, size: 24),
-            label: 'Hồ Sơ Y Tế',
+            label: 'Medical Records',
             activeIcon: Icon(Icons.medical_services, color: primaryColor, size: 24),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.event, size: 24),
-            label: 'Lịch Khám',
+            label: 'Appointment',
             activeIcon: Icon(Icons.event, color: primaryColor, size: 24),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person, size: 24),
-            label: 'Hồ Sơ',
+            label: 'Profile',
             activeIcon: Icon(Icons.person, color: primaryColor, size: 24),
           ),
         ],

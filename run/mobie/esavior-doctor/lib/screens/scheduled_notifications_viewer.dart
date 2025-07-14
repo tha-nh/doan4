@@ -98,15 +98,15 @@ class _ScheduledNotificationsViewerState extends State<ScheduledNotificationsVie
   String _getTypeDisplayName(String type) {
     switch (type) {
       case 'reminder':
-        return 'Nhắc nhở';
+        return 'Remind';
       case 'exact_time':
-        return 'Đến giờ';
+        return 'It\'s time';
       case 'background':
-        return 'Nền';
+        return 'Background';
       case 'push':
         return 'Push';
       default:
-        return 'Khác';
+        return 'Other';
     }
   }
 
@@ -121,17 +121,17 @@ class _ScheduledNotificationsViewerState extends State<ScheduledNotificationsVie
       
       // Reload the list
       await _loadScheduledNotifications();
-      
-      _showSnackBar('Đã hủy thông báo ID: $id', Colors.green);
+
+      _showSnackBar('Cancelled notification ID: $id', Colors.green);
     } catch (e) {
-      _showSnackBar('Lỗi khi hủy thông báo: $e', Colors.red);
+      _showSnackBar('Error canceling notification: $e', Colors.red);
     }
   }
 
   Future<void> _cancelAllNotifications() async {
     final confirmed = await _showConfirmDialog(
-      'Hủy tất cả thông báo',
-      'Bạn có chắc chắn muốn hủy tất cả ${_pendingNotifications.length} thông báo đã lập lịch?',
+      'Cancel all notifications',
+      'Are you sure you want to cancel all ${_pendingNotifications.length} scheduled notifications?',
     );
 
     if (confirmed == true) {
@@ -144,10 +144,10 @@ class _ScheduledNotificationsViewerState extends State<ScheduledNotificationsVie
         
         // Reload the list
         await _loadScheduledNotifications();
-        
-        _showSnackBar('Đã hủy tất cả thông báo', Colors.green);
+
+        _showSnackBar('All notifications canceled', Colors.green);
       } catch (e) {
-        _showSnackBar('Lỗi khi hủy thông báo: $e', Colors.red);
+        _showSnackBar('Error canceling notification: $e', Colors.red);
       }
     }
   }
@@ -161,12 +161,12 @@ class _ScheduledNotificationsViewerState extends State<ScheduledNotificationsVie
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Hủy', style: GoogleFonts.lora()),
+            child: Text('Cancel', style: GoogleFonts.lora()),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('Xác nhận', style: GoogleFonts.lora(color: Colors.white)),
+            child: Text('Confirmation', style: GoogleFonts.lora(color: Colors.white)),
           ),
         ],
       ),
@@ -196,7 +196,7 @@ class _ScheduledNotificationsViewerState extends State<ScheduledNotificationsVie
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Chi tiết thông báo',
+                'Notification details',
                 style: GoogleFonts.lora(fontWeight: FontWeight.bold),
               ),
             ),
@@ -208,17 +208,17 @@ class _ScheduledNotificationsViewerState extends State<ScheduledNotificationsVie
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildDetailRow('ID', notification.id.toString()),
-              _buildDetailRow('Loại', _getTypeDisplayName(type)),
-              _buildDetailRow('Tiêu đề', notification.title ?? 'Không có'),
-              _buildDetailRow('Nội dung', notification.body ?? 'Không có'),
-              _buildDetailRow('Payload', notification.payload ?? 'Không có'),
+              _buildDetailRow('Type', _getTypeDisplayName(type)),
+              _buildDetailRow('Title', notification.title ?? 'None'),
+              _buildDetailRow('Content', notification.body ?? 'None'),
+              _buildDetailRow('Payload', notification.payload ?? 'None'),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Đóng', style: GoogleFonts.lora()),
+            child: Text('Close', style: GoogleFonts.lora()),
           ),
           ElevatedButton(
             onPressed: () {
@@ -226,7 +226,7 @@ class _ScheduledNotificationsViewerState extends State<ScheduledNotificationsVie
               _cancelNotification(notification.id);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('Hủy thông báo', style: GoogleFonts.lora(color: Colors.white)),
+            child: Text('Cancel notification', style: GoogleFonts.lora(color: Colors.white)),
           ),
         ],
       ),
@@ -263,7 +263,7 @@ class _ScheduledNotificationsViewerState extends State<ScheduledNotificationsVie
       backgroundColor: backgroundColor,
       appBar: AppBar(
         title: Text(
-          'Thông báo đã lập lịch',
+          'Scheduled Notification',
           style: GoogleFonts.lora(
             fontSize: 20,
             fontWeight: FontWeight.w700,
@@ -277,13 +277,13 @@ class _ScheduledNotificationsViewerState extends State<ScheduledNotificationsVie
           IconButton(
             onPressed: _loadScheduledNotifications,
             icon: const Icon(Icons.refresh),
-            tooltip: 'Làm mới',
+            tooltip: 'Refresh',
           ),
           if (_pendingNotifications.isNotEmpty)
             IconButton(
               onPressed: _cancelAllNotifications,
               icon: const Icon(Icons.clear_all),
-              tooltip: 'Hủy tất cả',
+              tooltip: 'Cancel all',
             ),
         ],
       ),
@@ -299,7 +299,7 @@ class _ScheduledNotificationsViewerState extends State<ScheduledNotificationsVie
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text('Đang tải thông báo...'),
+            Text('Loading notification...'),
           ],
         ),
       );
@@ -313,7 +313,7 @@ class _ScheduledNotificationsViewerState extends State<ScheduledNotificationsVie
             Icon(Icons.error, size: 64, color: Colors.red[300]),
             const SizedBox(height: 16),
             Text(
-              'Lỗi khi tải thông báo',
+              'Error loading notification',
               style: GoogleFonts.lora(fontSize: 18, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),

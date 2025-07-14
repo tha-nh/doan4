@@ -1,0 +1,618 @@
+.services-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 100px;
+}
+
+.services-title{
+    width: 100%;
+    padding: 20px;
+    text-align: center;
+    font-size: 35px;
+    color: #000000;
+}
+
+.process-bar{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    background-color: white;
+    padding: 20px 0 30px 0;
+    border: 1px solid rgba(0,0,0,0.3);
+    border-bottom: none;
+    border-radius: 25px 25px 0 0;
+    width: 60%;
+}
+
+.process-bar-step1, .process-bar-step2, .process-bar-step3{
+    width: 40px;
+    height: 40px;
+    background-color: rgba(0,0,0,0.3);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 15px;
+    transition: all 0.3s ease-in-out;
+    position: relative;
+}
+
+.process-bar-step1.active, .process-bar-step2.active, .process-bar-step3.active{
+    background-color: #2ecc71;
+    transition: all 0.3s ease-in-out;
+}
+
+.process-bar-line12, .process-bar-line23 {
+    width: 20%;
+    height: 4px;
+    background-color: rgba(0,0,0,0.3);
+    transition: all 0.3s ease-in-out;
+}
+
+.process-bar-line12.active, .process-bar-line23.active {
+    background-color: #2ecc71;
+    transition: all 0.3s ease-in-out;
+}
+
+.process-bar .current{
+    background-color: #004b91;
+    width: 45px;
+    height: 45px;
+    transition: all 0.3s ease-in-out;
+}
+
+.services-form-container{
+    height: 100%;
+    width: 60%;
+    border: 1px solid rgba(0,0,0,0.3);
+    background-color: white;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    border-radius: 0 0 25px 25px;
+    padding: 50px 0;
+}
+
+.form-section1, .form-section2, .form-section3 {
+    display: flex;
+    width: 90%;
+    height: 100%;
+    flex-direction: column;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 20px;
+}
+
+.form-section1 h3, .form-section2 h3, .form-section3 h3 {
+    margin-bottom: 20px;
+    font-size: 20px;
+    text-align: center;
+    color: #004b91;
+}
+
+.form-section1 div label{
+    color: #004b91;
+    font-size: 16px;
+    padding-left: 10px;
+}
+
+.css-13cymwt-control, .css-t3ipsp-control{
+    border-radius: 25px !important;
+}
+
+.date-buttons, .time-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease-in-out;
+}
+
+.doctor-info{
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    align-items: center;
+    border: 1px solid hsl(0, 0%, 80%);
+    border-radius: 25px;
+    margin-top: 5px;
+    transition: all 0.3s ease-in-out;
+}
+
+.doctor-info img{
+    width: 100px;
+    min-height: 100px;
+    border-radius: 25px;
+}
+
+.doctor-info div{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 5px;
+    padding: 5px;
+}
+
+input[type="date"]{
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    border-radius: 25px;
+    border: 1px solid rgba(0,0,0,0.3);
+    transition: all 0.3s ease-in-out;
+}
+
+.next-step{
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    border-radius: 25px;
+    background-color: #004b91;
+    color: #ffffff;
+    transition: all 0.3s ease-in-out;
+    outline: none;
+    border: 1px solid rgba(0,0,0,0.3);
+}
+
+.next-step:hover{
+    color: #004b91;
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    border: 1px solid #004b91;
+}
+
+.prev-step{
+    width: 90%;
+    padding: 10px;
+    box-sizing: border-box;
+    border-radius: 25px;
+    background-color: #b90000;
+    color: #ffffff;
+    transition: all 0.3s ease-in-out;
+    outline: none;
+    border: 1px solid rgba(0,0,0,0.3);
+}
+
+.prev-step:hover{
+    color: #b90000;
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    border: 1px solid #b90000;
+}
+
+
+.date-buttons button, .time-slots button {
+    flex: 1 1 30%;
+    padding: 10px;
+    background-color: #ffffff;
+    border: 1px solid rgba(0,0,0,0.3);
+    border-radius: 25px;
+    cursor: pointer;
+    color: #000000;
+    outline: none;
+    transition: all 0.3s ease-in-out;
+}
+
+.date-buttons button:hover, .time-slots button:hover {
+    background-color: #004b91;
+    border: 1px solid #004b91;
+    color: #ffffff;
+    transition: all 0.3s ease-in-out;
+}
+
+.date-buttons button.selected, .time-slots button.selected {
+    background-color: #004b91;
+    border: 1px solid #004b91;
+    color: #ffffff;
+    transition: all 0.3s ease-in-out;
+}
+
+.form-section2 input{
+    width: 100%;
+    padding: 10px 20px;
+    border-radius: 25px;
+    border: 1px solid rgba(0,0,0,0.3);
+    outline: none;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+.form-section2 div{
+    width: 100%;
+}
+
+.form-section2 div p{
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+}
+
+.form-section2 label{
+    color: #004b91;
+    padding-left: 10px;
+    font-size: 16px;
+}
+
+.department-info{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    border: 1px solid hsl(0, 0%, 80%);
+    border-radius: 25px;
+    margin-top: 5px;
+}
+
+.department-info div{
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.department-info div img{
+    width: 40px;
+    height: 40px;
+    padding: 5px;
+}
+
+.department-info div p, .doctor-info div p{
+    text-align: left;
+    font-size: 14px;
+    padding: 5px;
+}
+
+.department-info h4, .doctor-info div h4{
+    padding: 5px;
+    color: #004b91;
+    font-size: 15px;
+    text-align: center;
+    width: 100%;
+}
+
+.info-div{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.info-div img{
+    width: 200px;
+    height: 200px;
+    margin-bottom: 20px;
+}
+
+.info-div h3{
+    color: #004b91;
+}
+
+.button-grp{
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.success-message .button-group button{
+    color: white;
+    border-radius: 25px;
+    padding: 10px 20px;
+    margin-top: 20px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+}
+
+.success-message .button-group{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 20px;
+}
+
+.success-message .button-group button:first-child{
+    background-color: #b90000;
+}
+
+.success-message .button-group button:last-child{
+    background-color: #004b91;
+}
+
+.success-message .button-group button:first-child:hover{
+    background-color: #ffffff;
+    color: #b90000;
+    border: 1px solid #b90000;
+    transition: all 0.3s ease-in-out;
+}
+
+.success-message .button-group button:last-child:hover{
+    background-color: #ffffff;
+    color: #004b91;
+    border: 1px solid #004b91;
+    transition: all 0.3s ease-in-out;
+}
+
+.success-message h2{
+    font-size: 25px;
+    color: #2ecc71;
+}
+
+.success-message{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+    gap: 20px;
+}
+
+.slide-in-left {
+    animation: slideInLeft 0.5s forwards;
+}
+
+.slide-in-right {
+    animation: slideInRight 0.5s forwards;
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.appointment-div, .patient-div{
+    width: 40%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+    gap: 15px;
+}
+
+.appointment-div h4, .patient-div h4{
+    font-size: 18px;
+    color: #004b91;
+}
+
+.appointment-div p, .patient-div p{
+    font-size: 15px;
+}
+
+.form-section3{
+    display: flex;
+    width: 90%;
+    flex-direction: column;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    box-sizing: border-box;
+}
+
+.payment-container{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: flex-start;
+}
+
+.date-select span {
+    font-size: 15px;
+    display: block;
+    color: #004b91;
+    text-align: center;
+    padding-bottom: 10px;
+}
+
+
+/*button:not(.get-code):disabled {*/
+/*    background-color: #cccccc !important;*/
+/*    color: #666666 !important;*/
+/*    cursor: not-allowed !important;*/
+/*    pointer-events: none !important;*/
+/*}*/
+
+.css-1nmdiq5-menu, .css-1jqq78o-placeholder, .css-1dimb5e-singleValue{
+    font-size: 15px;
+}
+
+@media (max-width: 640px) {
+    .department-info div p, .doctor-info div p {
+        text-align: left;
+        font-size: 12px;
+    }
+}
+
+.currentStepIcon{
+    position: absolute;
+    bottom: -25px;
+    transition: all 0.3s ease-in-out;
+}
+
+.time-error{
+    position: absolute;
+    background-color: rgba(0,0,0,0.7);
+    color: white;
+    border-radius: 25px;
+    padding: 10px;
+    z-index: 1;
+    font-size: 14px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 65%;
+    transition: all 0.3s ease-in-out;
+    text-align: center;
+}
+
+.time-slots{
+    position: relative;
+}
+
+
+
+/* Doctor List Section */
+.doctor-list {
+    margin-top: 30px;
+    padding: 10px 0;
+}
+
+.doctor-list label {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+    display: block;
+}
+
+/* Doctors Container */
+.doctors-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    padding: 10px;
+}
+
+/* Doctor Card */
+.doctor-card {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    position: relative;
+}
+
+.doctor-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    border-color: #007bff;
+}
+
+.doctor-card.selected {
+    border-color: #007bff;
+    background: linear-gradient(145deg, #f0f8ff, #e6f3ff);
+    box-shadow: 0 6px 12px rgba(0, 123, 255, 0.2);
+}
+
+/* Doctor Image */
+.doctor-card img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+/* Doctor Info */
+.doctor-card > div {
+    padding: 15px;
+}
+
+.doctor-card h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 8px;
+    line-height: 1.4;
+}
+
+.doctor-card p {
+    font-size: 13px;
+    color: #666;
+    margin: 0 0 6px;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.doctor-card p:last-child {
+    font-size: 14px;
+    font-weight: 500;
+    color: #007bff;
+    margin-top: 10px;
+}
+
+/* Badge for Selected Doctor */
+.doctor-card.selected::after {
+    content: '✓ Selected';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #007bff;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .doctors-container {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 15px;
+    }
+
+    .doctor-card img {
+        height: 140px;
+    }
+
+    .doctor-card h4 {
+        font-size: 15px;
+    }
+
+    .doctor-card p {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .doctors-container {
+        grid-template-columns: 1fr;
+    }
+
+    .doctor-card {
+        max-width: 300px;
+        margin: 0 auto;
+    }
+}

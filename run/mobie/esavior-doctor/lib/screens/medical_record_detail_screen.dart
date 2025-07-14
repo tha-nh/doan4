@@ -47,7 +47,7 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
   }
 
   String _formatDate(String? date) {
-    if (date == null) return 'Chưa có';
+    if (date == null) return '';
     try {
       final parsedDate = DateTime.parse(date);
       return DateFormat('dd/MM/yyyy').format(parsedDate);
@@ -74,7 +74,7 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
             },
             errorBuilder: (context, error, stackTrace) => const Center(
               child: Text(
-                'Không thể tải hình ảnh',
+                'Image could not be loaded',
                 style: TextStyle(color: Colors.white70),
               ),
             ),
@@ -92,7 +92,7 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
       backgroundColor: backgroundColor,
       appBar: AppBar(
         title: Text(
-          'Hồ Sơ Bệnh Án',
+          'Medical Record Details',
           style: GoogleFonts.lora(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -115,31 +115,22 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildPatientHeader(),
-                const SizedBox(height: 20),
-                _buildSectionHeader('Thông Tin Hồ Sơ'),
-                const SizedBox(height: 12),
-                _buildDetailCard([
-                  _buildDetailRow('Mã hồ sơ', widget.record['record_id']?.toString() ?? 'Không xác định'),
-                  _buildDetailRow('Mã bệnh nhân', widget.record['patient_id']?.toString() ?? 'Không xác định'),
-                  _buildDetailRow('Bác sĩ phụ trách', widget.record['doctor_id']?.toString() ?? 'Không xác định'),
-                  _buildDetailRow('Ngày khám', _formatDate(widget.record['follow_up_date'])),
-                ]),
+
                 if (imageUrl != null) ...[
                   const SizedBox(height: 20),
-                  _buildSectionHeader('Hình Ảnh Y Khoa'),
+                  _buildSectionHeader('Medical Images'),
                   const SizedBox(height: 12),
                   _buildImageSection(imageUrl),
                 ],
                 const SizedBox(height: 20),
-                _buildSectionHeader('Chi Tiết Y Khoa'),
+                _buildSectionHeader('Medical Details'),
                 const SizedBox(height: 12),
                 _buildDetailCard([
-                  _buildDetailRow('Triệu chứng', widget.record['symptoms'] ?? 'Chưa có'),
-                  _buildDetailRow('Chẩn đoán', widget.record['diagnosis'] ?? 'Chưa có'),
-                  _buildDetailRow('Điều trị', widget.record['treatment'] ?? 'Chưa có'),
-                  _buildDetailRow('Đơn thuốc', widget.record['prescription'] ?? 'Chưa có'),
-                  // _buildDetailRow('Tái khám', _formatDate(widget.record['follow_up_date'])),
-                  _buildDetailRow('Mức độ nghiêm trọng', widget.record['severity']?.toString() ?? 'Chưa có'),
+                  _buildDetailRow('Symptoms', widget.record['symptoms'] ?? 'Not yet'),
+                  _buildDetailRow('Diagnosis', widget.record['diagnosis'] ?? 'Not yet'),
+                  _buildDetailRow('Treatment', widget.record['treatment'] ?? 'Not yet'),
+                  _buildDetailRow('Prescription', widget.record['prescription'] ?? 'Not yet'),
+                  _buildDetailRow('Severity', widget.record['severity']?.toString() ?? 'Not yet'),
                 ]),
               ],
             ),
@@ -172,7 +163,7 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            patient != null ? patient['patient_name']?.toString() ?? 'Bệnh nhân không xác định' : 'Bệnh nhân không xác định',
+            patient != null ? patient['patient_name']?.toString() ?? 'Error' : 'Error',
             style: GoogleFonts.lora(
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -181,7 +172,7 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
           ),
           const SizedBox(height: 8),
           Text(
-            'Ngày sinh: ${_formatDate(patient != null ? patient['patient_dob'] : null)}',
+            'Date of birth: ${_formatDate(patient != null ? patient['patient_dob'] : null)}',
             style: GoogleFonts.lora(
               fontSize: 16,
               color: Colors.black54,
@@ -189,7 +180,15 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
           ),
           const SizedBox(height: 4),
           Text(
-            'Giới tính: ${patient != null ? patient['patient_gender'] ?? 'Chưa xác định' : 'Chưa xác định'}',
+            'Gender: ${patient != null ? patient['patient_gender'] ?? 'Unknown' : 'Unknown'}',
+            style: GoogleFonts.lora(
+              fontSize: 16,
+              color: Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Examination date: ${_formatDate(patient != null ? widget.record['follow_up_date'] : null)}',
             style: GoogleFonts.lora(
               fontSize: 16,
               color: Colors.black54,
@@ -311,7 +310,7 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
                   height: 150,
                   alignment: Alignment.center,
                   child: Text(
-                    'Không thể tải hình ảnh',
+                    'Image could not be loaded',
                     style: GoogleFonts.lora(
                       color: errorColor,
                       fontSize: 14,
@@ -324,7 +323,7 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
             Padding(
               padding: const EdgeInsets.all(12),
               child: Text(
-                'Nhấn để xem toàn màn hình',
+                'Click to view full screen',
                 style: GoogleFonts.lora(
                   fontSize: 12,
                   color: Colors.black54,

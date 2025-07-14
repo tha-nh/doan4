@@ -53,6 +53,7 @@ public class AppointmentsController<T extends Entity<?>> {
 
         Integer patientId;
         if (existingPatients.isEmpty()) {
+            patient.setPatient_username(patient.getPatient_email());
             // Insert new patient if not exists
             patientId = model.insert(patient);
 
@@ -73,6 +74,7 @@ public class AppointmentsController<T extends Entity<?>> {
         appointments.setPatient_id(patientId);
         model.insert(appointments);
     }
+
 
     @PutMapping("/update")
     public void update(@RequestBody Map<String, Object> requestData) throws SQLException, IllegalAccessException {
@@ -409,6 +411,62 @@ public class AppointmentsController<T extends Entity<?>> {
             e.printStackTrace();
             return new ArrayList<>();
         }
+    }
+
+    @GetMapping("/todays-appointments")
+    public ResponseEntity<List<Appointments>> getTodaysAppointments() {
+        // Implementation for getting today's appointments
+        return ResponseEntity.ok(new ArrayList<>()); // Placeholder
+    }
+
+    @GetMapping("/available-doctors")
+    public ResponseEntity<List<Map<String, Object>>> getAvailableDoctors(
+            @RequestParam("departmentId") int departmentId,
+            @RequestParam("date") String date,
+            @RequestParam("timeSlot") int timeSlot) {
+
+        List<Map<String, Object>> availableDoctors = new ArrayList<>();
+
+        try {
+            // Get all doctors in the department
+            Doctors doctorFilter = new Doctors();
+            doctorFilter.setDepartment_id(departmentId);
+            List<Doctors> doctors = model.getEntityById(doctorFilter);
+
+            for (Doctors doctor : doctors) {
+                // Check if doctor has available slot
+                Appointments appointmentFilter = new Appointments();
+                appointmentFilter.setDoctor_id(doctor.getDoctor_id());
+                appointmentFilter.setSlot(timeSlot);
+                // Convert date string to Date object for comparison
+                try {
+                    java.sql.Date sqlDate = java.sql.Date.valueOf(date);
+                    appointmentFilter.setMedical_day(sqlDate);
+                } catch (Exception e) {
+                    continue; // Skip if date parsing fails
+                }
+
+                List<Appointments> existingAppointments = model.getEntityById(appointmentFilter);
+
+                // If no existing appointment found, doctor is available
+                if (existingAppointments.isEmpty()) {
+                    Map<String, Object> doctorInfo = new HashMap<>();
+                    doctorInfo.put("doctor_id", doctor.getDoctor_id());
+                    doctorInfo.put("doctor_name", doctor.getDoctor_name());
+                    doctorInfo.put("doctor_email", doctor.getDoctor_email());
+                    doctorInfo.put("doctor_phone", doctor.getDoctor_phone());
+                    doctorInfo.put("doctor_image", doctor.getDoctor_image());
+                    doctorInfo.put("doctor_price", doctor.getDoctor_price());
+                    availableDoctors.add(doctorInfo);
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(availableDoctors);
+        }
+
+        return ResponseEntity.ok(availableDoctors);
     }
 
 }

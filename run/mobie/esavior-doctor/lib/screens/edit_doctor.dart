@@ -86,12 +86,12 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
         });
       } else {
         setState(() {
-          _errorMessage = 'Lỗi khi tải thông tin bác sĩ';
+          _errorMessage = 'Error loading doctor information!';
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Lỗi kết nối. Vui lòng thử lại!';
+        _errorMessage = 'Connection error. Please try again!';
       });
     }
   }
@@ -133,7 +133,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Cập nhật thành công',
+              'Updated successfully!',
               style: GoogleFonts.lora(
                 fontSize: 14,
                 color: Colors.white,
@@ -147,12 +147,12 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
         Navigator.pop(context, true);
       } else {
         setState(() {
-          _errorMessage = 'Cập nhật thất bại. Vui lòng thử lại!';
+          _errorMessage = 'Update failed. Please try again!';
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Lỗi kết nối. Vui lòng thử lại!';
+        _errorMessage = 'Connection error. Please try again!';
       });
     } finally {
       setState(() {
@@ -181,7 +181,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text(
-          'Chỉnh sửa thông tin bác sĩ',
+          'Edit doctor information',
           style: GoogleFonts.lora(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -217,7 +217,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                   ),
                 ),
                 child: Text(
-                  'Thử lại',
+                  'Retry',
                   style: GoogleFonts.lora(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -246,7 +246,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
-                    'Cập nhật hồ sơ bác sĩ',
+                    'Update doctor profile',
                     style: GoogleFonts.lora(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -268,7 +268,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                         TextFormField(
                           controller: _nameController,
                           decoration: InputDecoration(
-                            labelText: 'Họ tên',
+                            labelText: 'Full name',
                             labelStyle: GoogleFonts.lora(),
                             prefixIcon: const Icon(Icons.person, color: Colors.blueAccent),
                             border: OutlineInputBorder(
@@ -279,13 +279,13 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                           ),
                           style: GoogleFonts.lora(),
                           validator: (value) =>
-                          value!.trim().isEmpty ? 'Vui lòng nhập họ tên' : null,
+                          value!.trim().isEmpty ? 'Please enter your full name' : null,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _phoneController,
                           decoration: InputDecoration(
-                            labelText: 'Số điện thoại',
+                            labelText: 'Phone number',
                             labelStyle: GoogleFonts.lora(),
                             prefixIcon: const Icon(Icons.phone, color: Colors.blueAccent),
                             border: OutlineInputBorder(
@@ -303,9 +303,9 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                             PhoneNumberFormatter(),
                           ],
                           validator: (value) {
-                            if (value!.trim().isEmpty) return 'Vui lòng nhập số điện thoại';
-                            if (value.trim().length != 10) return 'Số điện thoại phải có 10 chữ số';
-                            if (!value.startsWith('0')) return 'Số điện thoại phải bắt đầu bằng số 0';
+                            if (value!.trim().isEmpty) return 'Please enter phone number';
+                            if (value.trim().length != 10) return 'Phone number must be 10 digits';
+                            if (!value.startsWith('0')) return 'Phone number must start with 0';
                             return null;
                           },
                         ),
@@ -313,7 +313,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                         TextFormField(
                           controller: _addressController,
                           decoration: InputDecoration(
-                            labelText: 'Địa chỉ',
+                            labelText: 'Address',
                             labelStyle: GoogleFonts.lora(),
                             prefixIcon: const Icon(Icons.location_on, color: Colors.blueAccent),
                             border: OutlineInputBorder(
@@ -324,7 +324,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                           ),
                           style: GoogleFonts.lora(),
                           validator: (value) =>
-                          value!.trim().isEmpty ? 'Vui lòng nhập địa chỉ' : null,
+                          value!.trim().isEmpty ? 'Please enter address' : null,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
@@ -342,55 +342,21 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                           style: GoogleFonts.lora(),
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
-                            if (value!.trim().isEmpty) return 'Vui lòng nhập email';
+                            if (value!.trim().isEmpty) return 'Please enter email';
                             if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                                 .hasMatch(value.trim())) {
-                              return 'Email không hợp lệ';
+                              return 'Invalid email';
                             }
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _priceController,
-                          decoration: InputDecoration(
-                            labelText: 'Giá khám (VND)',
-                            labelStyle: GoogleFonts.lora(),
-                            prefixIcon: const Icon(Icons.monetization_on, color: Colors.blueAccent),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            filled: true,
-                            fillColor: Colors.white,
-                          ),
-                          style: GoogleFonts.lora(),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly, // chỉ cho phép số nguyên
-                          ],
-                          validator: (value) {
-                            if (value!.trim().isEmpty) return 'Vui lòng nhập giá khám';
-                            if (double.tryParse(value.trim()) == null) return 'Giá không hợp lệ';
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _statusController,
-                          decoration: InputDecoration(
-                            labelText: 'Trạng thái làm việc',
-                            labelStyle: GoogleFonts.lora(),
-                            prefixIcon: const Icon(Icons.work, color: Colors.blueAccent),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            filled: true,
-                            fillColor: Colors.white,
-                          ),
-                          style: GoogleFonts.lora(),
-                        ),
+
 
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _summaryController,
                           decoration: InputDecoration(
-                            labelText: 'Tóm tắt',
+                            labelText: 'Summary',
                             labelStyle: GoogleFonts.lora(),
                             prefixIcon: const Icon(Icons.description, color: Colors.blueAccent),
                             border: OutlineInputBorder(
@@ -406,7 +372,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                         TextFormField(
                           controller: _descriptionController,
                           decoration: InputDecoration(
-                            labelText: 'Mô tả chi tiết',
+                            labelText: 'Detailed description',
                             labelStyle: GoogleFonts.lora(),
                             prefixIcon: const Icon(Icons.info, color: Colors.blueAccent),
                             border: OutlineInputBorder(
@@ -441,7 +407,7 @@ class _EditDoctorScreenState extends State<EditDoctorScreen> {
                       strokeWidth: 2,
                     )
                         : Text(
-                      'Lưu thay đổi',
+                      'Save changes',
                       style: GoogleFonts.lora(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

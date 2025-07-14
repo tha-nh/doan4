@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="24a9a008-5764-43f1-a5ff-144c475a2dce" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../../backend-springboot-main/backend-springboot-main/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../../backend-springboot-main/backend-springboot-main/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../backend-springboot-main/backend-springboot-main/target/classes/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../../backend-springboot-main/backend-springboot-main/target/classes/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../backend-springboot-main/backend-springboot-main/target/test-classes/com/project/esavior/ESaviorApplicationTests.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/AdminDashboard.css" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/AdminDashboard.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/AdminDashboard.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/AdminDashboard.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/AppointmentsPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/AppointmentsPage.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/AppointmentsPage.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/AppointmentsPage.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/DoctorDetailPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/DoctorDetailPage.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/DoctorsPage.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/DoctorsPage.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/FeedbackListWithReply.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/FeedbackListWithReply.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/LoginAdmin.css" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/LoginAdmin.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/LoginAdmin.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/LoginAdmin.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/PatientsPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/PatientsPage.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/PatientsPage.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/PatientsPage.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/StaffPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/StaffPage.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/StaffPage.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/admins/StaffPage.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/doctors/DoctorDashboard.css" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/doctors/DoctorDashboard.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/doctors/LoginDoctor.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/doctors/LoginDoctor.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/doctors/MedicalRecords.css" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/doctors/MedicalRecords.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/doctors/MedicalRecords.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/doctors/MedicalRecords.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/doctors/RecordDetails.css" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/doctors/RecordDetails.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/doctors/RecordDetails.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/doctors/RecordDetails.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/staffs/LoginStaff.css" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/staffs/LoginStaff.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/staffs/LoginStaff.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/staffs/LoginStaff.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/staffs/StaffDashboard.css" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/staffs/StaffDashboard.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/staffs/StaffDashboard.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../dashboard-main/dashboard-main/admindashboard/src/components/staffs/StaffDashboard.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../esavior-patient-main/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../esavior-patient-main/.idea/caches/deviceStreaming.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../esavior-patient-main/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../esavior-patient-main/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../esavior-patient-main/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../esavior-patient-main/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../esavior-patient-main/esavior-patient-main/lib/screens/diagnosis.dart" beforeDir="false" afterPath="$PROJECT_DIR$/../../esavior-patient-main/esavior-patient-main/lib/screens/diagnosis.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/Appointment/Appointment.css" beforeDir="false" afterPath="$PROJECT_DIR$/components/Appointment/Appointment.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/Appointment/Appointment.js" beforeDir="false" afterPath="$PROJECT_DIR$/components/Appointment/Appointment.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/Dashboard/Dashboard.css" beforeDir="false" afterPath="$PROJECT_DIR$/components/Dashboard/Dashboard.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/Dashboard/Dashboard.js" beforeDir="false" afterPath="$PROJECT_DIR$/components/Dashboard/Dashboard.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/Diagnosis/Diagnosis.css" beforeDir="false" afterPath="$PROJECT_DIR$/components/Diagnosis/Diagnosis.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/Diagnosis/Diagnosis.js" beforeDir="false" afterPath="$PROJECT_DIR$/components/Diagnosis/Diagnosis.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/Header/Header.js" beforeDir="false" afterPath="$PROJECT_DIR$/components/Header/Header.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/Tips/HealthTips.css" beforeDir="false" afterPath="$PROJECT_DIR$/components/Tips/HealthTips.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/Tips/HealthTips.js" beforeDir="false" afterPath="$PROJECT_DIR$/components/Tips/HealthTips.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../springMVC-main/springMVC-main/src/main/java/springboot/springboot/database/model/SendEmailUsername.java" beforeDir="false" afterPath="$PROJECT_DIR$/../../springMVC-main/springMVC-main/src/main/java/springboot/springboot/database/model/SendEmailUsername.java" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../../.." />
+  </component>
+  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
+  <component name="KubernetesApiProvider"><![CDATA[{
+  "isMigrated": true
+}]]></component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 4
+}]]></component>
+  <component name="ProjectId" id="2yuF9ITJbXfoFqGD2iy5jjnEABt" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "C:/Users/Nguyen/Documents/GitHub/bes4/bes4/fpt-health-react/src",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-fbdcb00ec9e3-intellij.indexing.shared.core-IU-251.26094.121" />
+        <option value="bundled-js-predefined-d6986cc7102b-b26f3e71634d-JavaScript-IU-251.26094.121" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="24a9a008-5764-43f1-a5ff-144c475a2dce" name="Changes" comment="" />
+      <created>1750676399422</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1750676399422</updated>
+      <workItem from="1750676400994" duration="652000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

@@ -1,0 +1,198 @@
+
+.contact-container{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    position: relative;
+}
+
+.contact-banner{
+    position: relative;
+    width: 100%;
+    height: 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.contact-banner h4{
+    color: #ffffff;
+    font-size: 35px;
+    text-transform: uppercase;
+}
+
+.contact-img{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: calc(100%) center;
+    z-index: -1;
+}
+
+.contact-overlay{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: -1;
+}
+
+.contact-content{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 0 5%;
+    align-items: center;
+    box-sizing: border-box;
+    margin: 100px 0;
+    position: relative;
+}
+
+.contact-form{
+    width: 45%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.contact-form h4{
+    width: 100%;
+    color: #000000;
+    font-size: 35px;
+    text-align: center;
+}
+
+.contact-form h4 span {
+    color: #004b91;
+}
+
+.contact-form p {
+    color: rgba(0,0,0,0.6);
+    font-size: 16px;
+    width: 90%;
+    text-align: center;
+}
+
+.contact-form form{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.contact-form form .input-list{
+    width: 100%;
+}
+
+.input-list textarea{
+    width: 100%;
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 25px;
+    padding: 10px 20px;
+    outline: none;
+    font-size: 14px;
+    font-weight: bold;
+    box-sizing: border-box;
+    transition: all 0.3s ease-in-out;
+    resize: none;
+}
+
+.input-area textarea:focus {
+    border: 1px solid #004b91;
+    transition: all 0.3s ease-in-out;
+}
+
+.input-area textarea:focus ~ label {
+    top: -8px;
+    left: 20px;
+    font-size: 12px;
+    color: #004b91;
+    transition: all 0.3s ease-in-out;
+}
+
+.contact-content iframe{
+    position: absolute;
+    width: 40%;
+    height: 90%;
+    right: 5%;
+    top: 5%;
+    border: none;
+    border-radius: 25px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+.response-message {
+    margin-top: 10px;
+    padding: 7px;
+    border-radius: 10px;
+    font-weight: bold;
+    text-align: center;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast-message {
+    background-color: #004b91; /* Màu cam như nút send */
+    color: white;
+    padding: 15px 20px;
+    border-radius: 6px;
+    min-width: 250px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    position: relative;
+    overflow: hidden;
+    font-weight: bold;
+}
+
+.toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    background-color: white;
+    width: 100%;
+    animation: shrinkBar 5s linear forwards;
+}
+
+@keyframes shrinkBar {
+    from {
+        width: 100%;
+    }
+    to {
+        width: 0%;
+    }
+}

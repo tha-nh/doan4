@@ -16,13 +16,15 @@ class Home extends StatefulWidget {
   final Function onLogout;
   final int? patientId;
   final VoidCallback onNavigateToDiagnosis;
+  final VoidCallback onNavigateToAppointment; // Add this line
 
   const Home(
       {super.key,
         required this.isLoggedIn,
         required this.onLogout,
         this.patientId,
-        required this.onNavigateToDiagnosis});
+        required this.onNavigateToDiagnosis,
+        required this.onNavigateToAppointment}); // Add this parameter
 
   @override
   _HomeState createState() => _HomeState();
@@ -255,13 +257,10 @@ class _HomeState extends State<Home> {
                                 padding: const EdgeInsets.symmetric(
                                     vertical: 15),
                               ),
-                              onPressed: () {
-                                Navigator.pushNamed(
-                                    context, '/emergency_booking');
-                              },
+                              onPressed: widget.onNavigateToAppointment, // Changed this line
                               child: const Text(
                                 textAlign: TextAlign.center,
-                                'Emergency Booking',
+                                'Appointment Booking',
                                 style: TextStyle(
                                   color: whiteColor,
                                   fontSize: 16.0,
@@ -290,11 +289,11 @@ class _HomeState extends State<Home> {
                               ),
                               onPressed: () {
                                 Navigator.pushNamed(
-                                    context, '/nonEmergency_booking');
+                                    context, '/emergency_booking');
                               },
                               child: const Text(
                                 textAlign: TextAlign.center,
-                                'Non-urgent Booking',
+                                'Emergency Booking',
                                 style: TextStyle(
                                     color: primaryColor,
                                     fontSize: 16.0,
@@ -305,6 +304,7 @@ class _HomeState extends State<Home> {
                         ],
                       ),
                     ),
+                    // Rest of the build method remains the same...
                     const SizedBox(
                       height: 30,
                     ),

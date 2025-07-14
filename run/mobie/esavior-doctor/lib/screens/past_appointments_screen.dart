@@ -104,7 +104,7 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
 
   Future<void> _initializeDateFormatting() async {
     try {
-      await initializeDateFormatting('vi', null);
+      await initializeDateFormatting('en', null);
       _isLocaleInitialized = true;
     } catch (e) {
       _isLocaleInitialized = false;
@@ -174,7 +174,7 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
     try {
       await _fetchPastAppointments();
     } catch (e) {
-      _showSnackBar('Lỗi khi cập nhật: $e', errorColor);
+      _showSnackBar('Error while updating: $e', errorColor);
     } finally {
       setState(() {
         _isRefreshing = false;
@@ -275,7 +275,7 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
   }
 
   String _formatDateVerbose(String? date) {
-    if (date == null) return 'Chưa xác định';
+    if (date == null) return 'Not determined';
     try {
       final parsedDate = DateTime.parse(date);
       final now = DateTime.now();
@@ -284,15 +284,15 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
       final appointmentDate = DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
 
       if (appointmentDate.isAtSameMomentAs(today)) {
-        return 'Hôm nay';
+        return 'Today';
       } else if (appointmentDate.isAtSameMomentAs(yesterday)) {
-        return 'Hôm qua';
+        return 'Yesterday';
       } else {
         final difference = today.difference(appointmentDate).inDays;
         if (difference <= 7) {
-          return '$difference ngày trước';
+          return '$difference days ago';
         } else if (_isLocaleInitialized) {
-          return DateFormat('EEEE, dd/MM/yyyy', 'vi').format(parsedDate);
+          return DateFormat('EEEE, dd/MM/yyyy', 'en').format(parsedDate);
         } else {
           return DateFormat('dd/MM/yyyy').format(parsedDate);
         }
@@ -303,14 +303,14 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
   }
 
   String _formatDate(DateTime? date) {
-    if (date == null) return 'Chọn ngày';
+    if (date == null) return 'Select date';
     return DateFormat('dd/MM/yyyy').format(date);
   }
 
   String _getStatusText(String? status) {
     switch (status?.toUpperCase()) {
-      case 'CONFIRMED':
-        return 'CONFIRMED';
+      case 'COMPLETED':
+        return 'COMPLETED';
       case 'CANCELLED':
         return 'CANCELLED';
       case 'PENDING':
@@ -322,7 +322,7 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
 
   Color _getStatusColor(String? status) {
     switch (status?.toUpperCase()) {
-      case 'CONFIRMED':
+      case 'COMPLETED':
         return successColor;
       case 'CANCELLED':
         return errorColor;
@@ -370,7 +370,7 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Lịch Sử Khám Bệnh',
+                        'Appointment History',
                         style: GoogleFonts.lora(
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
@@ -379,7 +379,7 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Các cuộc hẹn đã qua',
+                        'Past appointments',
                         style: GoogleFonts.lora(
                           fontSize: 14,
                           color: Colors.white.withOpacity(0.9),
@@ -428,7 +428,7 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Lọc theo ngày khám',
+                    'Filter by examination date',
                     style: GoogleFonts.lora(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -498,7 +498,7 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
                             ),
                           ),
                           child: Text(
-                            'Xóa lọc',
+                            'Clear filtering',
                             style: GoogleFonts.lora(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -511,7 +511,7 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
                   if (_fromDate != null && _toDate != null) ...[
                     const SizedBox(height: 8),
                     Text(
-                      'Hiển thị ${filteredAppointments.length} cuộc hẹn',
+                      'Show ${filteredAppointments.length} appointment',
                       style: GoogleFonts.lora(
                         fontSize: 12,
                         color: textSecondaryColor,
@@ -632,15 +632,7 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'ID: ${appointment['patient_id']}',
-                                    style: GoogleFonts.lora(
-                                      fontSize: 12,
-                                      color: textSecondaryColor,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
+
                                 ],
                               ),
                             ),
@@ -677,7 +669,7 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
                               Expanded(
                                 child: _buildInfoItem(
                                   Icons.calendar_today,
-                                  'Ngày khám',
+                                  'Date of examination',
                                   appointmentDate,
                                 ),
                               ),
@@ -690,7 +682,7 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
                               Expanded(
                                 child: _buildInfoItem(
                                   Icons.access_time,
-                                  'Giờ khám',
+                                  'Examination time',
                                   timeSlot,
                                 ),
                               ),
@@ -765,8 +757,8 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
           const SizedBox(height: 24),
           Text(
             _fromDate != null && _toDate != null
-                ? 'Không có lịch hẹn trong khoảng thời gian này'
-                : 'Chưa có lịch sử khám bệnh',
+                ? 'No appointments available during this time period'
+                : 'No medical history',
             style: GoogleFonts.lora(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -777,8 +769,8 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
           const SizedBox(height: 8),
           Text(
             _fromDate != null && _toDate != null
-                ? 'Thử chọn khoảng thời gian khác'
-                : 'Các cuộc hẹn đã hoàn thành sẽ hiển thị ở đây',
+                ? 'Try selecting a different time period'
+                : 'Completed appointments will be displayed here.',
             style: GoogleFonts.lora(
               fontSize: 14,
               color: textSecondaryColor,
@@ -809,7 +801,7 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
           ),
           const SizedBox(height: 24),
           Text(
-            'Có lỗi xảy ra',
+            'An error occurred',
             style: GoogleFonts.lora(
               fontSize: 20,
               fontWeight: FontWeight.w700,
@@ -839,7 +831,7 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
             ),
             icon: const Icon(Icons.refresh, size: 20),
             label: Text(
-              'Thử lại',
+              'Retry',
               style: GoogleFonts.lora(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -858,7 +850,7 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
       body: Column(
         children: [
           SizedBox(
-            height: 140,
+            height: 120,
             child: _buildHeader(),
           ),
           if (_isFilterExpanded) _buildFilterSection(),
@@ -874,7 +866,7 @@ class _PastAppointmentsScreenState extends State<PastAppointmentsScreen>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Đang tải lịch sử...',
+                    'Loading history...',
                     style: GoogleFonts.lora(
                       fontSize: 16,
                       color: textSecondaryColor,

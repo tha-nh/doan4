@@ -1,0 +1,385 @@
+.health-tips-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  background-color: #f3f4f6;
+  font-family: "Arial", sans-serif;
+}
+
+.health-tips-banner {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  overflow: hidden;
+}
+
+.health-tips-banner h1 {
+  color: #ffffff;
+  font-size: 35px;
+  text-transform: uppercase;
+  font-weight: bold;
+  z-index: 10;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.health-tips-banner p {
+  color: #ffffff;
+  font-size: 16px;
+  max-width: 600px;
+  z-index: 10;
+  margin-top: 16px;
+  line-height: 1.5;
+}
+
+.health-tips-banner img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  transition: transform 0.5s ease;
+}
+
+.banner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 0;
+}
+
+.health-topics {
+  width: 100%;
+  position: relative;
+  margin-top: 150px;
+  padding: 0 5%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.topics-img {
+  position: absolute;
+  left: 5%;
+  top: 0;
+  width: 40%;
+  height: 100%;
+  border-radius: 25px;
+  overflow: hidden;
+}
+
+.topics-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.topics-content {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.topics-content h2 {
+  font-size: 35px;
+  color: #000000;
+  text-align: left;
+}
+
+.topics-content h2 span {
+  color: #004b91;
+}
+
+.topic-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.topic-item h3 {
+  font-size: 25px;
+  color: #004b91;
+  font-weight: 600;
+}
+
+.topic-item p {
+  font-size: 16px;
+  color: rgba(0, 0, 0, 0.6);
+  line-height: 1.6;
+}
+
+.topic-item ul {
+  list-style: disc;
+  padding-left: 20px;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 16px;
+}
+
+.topic-item a {
+  color: #004b91;
+  font-size: 16px;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.topic-item a:hover {
+  text-decoration: underline;
+}
+
+.community-qa {
+  width: 100%;
+  position: relative;
+  margin-top: 150px;
+  padding: 0 5%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.qa-img {
+  width: 35%;
+  height: 100%;
+  border-radius: 25px;
+  overflow: hidden;
+}
+
+.qa-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.qa-content {
+  width: 60%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.qa-content h2 {
+  font-size: 35px;
+  color: #000000;
+}
+
+.qa-content h2 span {
+  color: #004b91;
+}
+
+.qa-content p {
+  font-size: 16px;
+  color: rgba(0, 0, 0, 0.6);
+  line-height: 1.6;
+}
+
+.qa-content a {
+  color: #004b91;
+  text-decoration: none;
+}
+
+.qa-content a:hover {
+  text-decoration: underline;
+}
+
+.qa-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.qa-form label {
+  font-size: 18px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.qa-form textarea {
+  width: 100%;
+  padding: 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 16px;
+  resize: vertical;
+  transition: border-color 0.3s ease;
+}
+
+.qa-form textarea:focus {
+  outline: none;
+  border-color: #004b91;
+  box-shadow: 0 0 0 2px rgba(0, 75, 145, 0.2);
+}
+
+.qa-form button {
+  padding: 10px 20px;
+  background-color: #004b91;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.qa-form button:hover {
+  background-color: #003a70;
+}
+
+.health-resources {
+  width: 100%;
+  position: relative;
+  margin-top: 150px;
+  padding: 0 5%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.resources-img {
+  width: 35%;
+  height: 100%;
+  border-radius: 25px;
+  overflow: hidden;
+}
+
+.resources-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.resources-content {
+  width: 60%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.resources-content h2 {
+  font-size: 35px;
+  color: #000000;
+}
+
+.resources-content h2 span {
+  color: #004b91;
+}
+
+.resources-content p {
+  font-size: 16px;
+  color: rgba(0, 0, 0, 0.6);
+  line-height: 1.6;
+}
+
+.resources-content ul {
+  list-style: disc;
+  padding-left: 20px;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 16px;
+}
+
+.resources-content a {
+  color: #004b91;
+  text-decoration: none;
+}
+
+.resources-content a:hover {
+  text-decoration: underline;
+}
+
+.resources-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #004b91;
+  color: #ffffff;
+  border-radius: 8px;
+  font-size: 16px;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
+}
+
+.resources-btn:hover {
+  background-color: #003a70;
+}
+
+.legal-disclaimer {
+  width: 100%;
+  position: relative;
+  margin: 150px 0 100px 0;
+  padding: 0 5%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.legal-disclaimer h2 {
+  font-size: 35px;
+  color: #000000;
+}
+
+.legal-disclaimer h2 span {
+  color: #004b91;
+}
+
+.disclaimer-content {
+  width: 100%;
+  max-width: 800px;
+  background-color: #ffffff;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.disclaimer-content h3 {
+  font-size: 25px;
+  color: #004b91;
+  font-weight: 600;
+}
+
+.disclaimer-content p {
+  font-size: 16px;
+  color: rgba(0, 0, 0, 0.6);
+  line-height: 1.6;
+}
+
+.disclaimer-content a {
+  color: #004b91;
+  text-decoration: none;
+}
+
+.disclaimer-content a:hover {
+  text-decoration: underline;
+}

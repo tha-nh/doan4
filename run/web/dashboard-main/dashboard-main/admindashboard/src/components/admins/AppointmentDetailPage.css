@@ -1,0 +1,33 @@
+.appointment-detail-page .content{
+    width: 100%;
+    flex: 1 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 50px);
+}
+
+.appointment-detail-page{
+    display: flex;
+    height: 100%;
+    width: 100%;
+}
+
+.appointment-info{
+    border-radius: 4px;
+    background-color: white;
+    box-shadow: 0 0 3px rgba(0,0,0,0.3);
+    padding: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.appointment-info h3{
+    color: #004B91;
+    font-size: 20px;
+    font-weight: bold;
+}

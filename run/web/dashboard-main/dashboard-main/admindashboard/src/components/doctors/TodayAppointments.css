@@ -1,0 +1,361 @@
+.today-appointments {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+.sidebar {
+    width: 250px;
+    flex-shrink: 0;
+}
+
+.content {
+    flex-grow: 1;
+    padding: 20px;
+}
+
+.appointments-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.appointments-list li {
+    padding: 20px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 90%;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+.appointments-list li div {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: flex-start;
+    width: 50%;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.appointments-list li div:last-child {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    width: 50%;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.appointments-list li p {
+    margin: 0;
+    font-size: 15px;
+}
+
+.appointments-list li select {
+    font-size: 15px;
+    padding: 5px;
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    outline: none;
+}
+
+.appointments-list li div button {
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    outline: none;
+    background-color: #004B91;
+    color: white;
+    font-size: 12px;
+    transition: all 0.3s ease-in-out;
+}
+
+.appointments-list li button:hover {
+    color: #004B91;
+    background-color: white;
+    box-shadow: 0 0 3px #004B91;
+    transition: all 0.3s ease-in-out;
+    cursor: pointer;
+}
+
+.dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 30px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    width: 600px;
+    max-width: 90%;
+    max-height: 80vh; /* Set a maximum height to enable scrolling */
+    overflow-y: auto; /* Enable vertical scrolling */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    /* margin-top:40px; */
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    bottom: 0;
+    padding-top: 10px;
+}
+
+.dialog-records .dialog-content {
+    height: 400px;
+    overflow-y: scroll;
+}
+
+.dialog-title {
+    font-size: 22px;
+    margin-bottom: 25px;
+    color: #004B91;
+    font-weight: bold;
+    text-align: center;
+}
+
+.dialog-content {
+    margin-bottom: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+}
+
+.dialog-content label {
+    color: #004B91;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.dialog-content textarea {
+    height: 100px;
+    padding: 12px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    outline: none;
+    font-size: 14px;
+    resize: vertical;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 20px;
+
+}
+
+.dialog-content textarea:focus {
+    border-color: #004B91;
+    box-shadow: 0 0 5px rgba(0, 75, 145, 0.3);
+}
+
+.dialog-content input {
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    outline: none;
+    padding: 10px;
+    margin-top: 22px;
+}
+
+.dialog-content select {
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    outline: none;
+    padding: 10px;
+}
+
+.dialog-content h4 {
+    font-size: 18px;
+    color: #004B91;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.dialog-content p {
+    margin: 5px 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.dialog-content p strong {
+    color: #004B91;
+    font-weight: 600;
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.dialog-actions .btn {
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+}
+
+.dialog-actions .btn-danger {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+}
+
+.dialog-actions .btn-danger:hover {
+    background-color: #c82333;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.dialog-actions .btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+}
+
+.dialog-actions .btn-secondary:hover {
+    background-color: #5a6268;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.dialog-actions .btn-primary {
+    background-color: #004B91;
+    color: white;
+    border: none;
+}
+
+.dialog-actions .btn-primary:hover {
+    background-color: #003a6d;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.tab-title {
+    color: #004B91;
+    font-size: 25px;
+    font-weight: bold;
+}
+
+button:disabled {
+    background-color: #cccccc !important;
+    color: #666666 !important;
+    cursor: not-allowed !important;
+}
+
+button:disabled:hover {
+    background-color: #cccccc !important;
+}
+
+.date-buttons, .time-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease-in-out;
+}
+
+.date-buttons button, .time-slots button {
+    flex: 1 1 30%;
+    padding: 10px;
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #000;
+    outline: none;
+    transition: all 0.3s ease-in-out;
+}
+
+.date-buttons button:hover, .time-slots button:hover {
+    background-color: #004b91;
+    box-shadow: none;
+    border: none;
+    color: white;
+    transition: all 0.3s ease-in-out;
+}
+
+.date-buttons button.selected, .time-slots button.selected {
+    background-color: #004b91;
+    border: none;
+    color: #ffffff;
+    transition: all 0.3s ease-in-out;
+}
+
+.date-select span {
+    font-size: 15px;
+    display: block;
+    color: #004b91;
+    text-align: center;
+    font-weight: bold;
+    padding-bottom: 10px;
+}
+
+.time-error {
+    position: absolute;
+    background-color: rgba(0,0,0,0.7);
+    color: white;
+    border-radius: 4px;
+    padding: 10px;
+    z-index: 1;
+    font-size: 14px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 65%;
+    transition: all 0.3s ease-in-out;
+    text-align: center;
+}
+
+.time-slots {
+    position: relative;
+}
+
+.dialog label {
+    color: #004b91;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: inherit;
+
+}
+
+.medical-record-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.medical-record-details p {
+    margin: 0;
+}
+
+.medical-record-details button {
+    border: none;
+    outline: none;
+    background-color: #004b91;
+    color: white;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.medical-record-details button:hover {
+    cursor: pointer;
+    background-color: white;
+    color: #004b91;
+    box-shadow: 0 0 3px #004b91;
+}
+
+.success-message {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}

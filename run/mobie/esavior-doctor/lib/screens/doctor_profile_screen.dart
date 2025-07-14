@@ -20,6 +20,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
     with TickerProviderStateMixin {
   final _storage = const FlutterSecureStorage();
   Map<String, dynamic>? doctor;
+  List<dynamic> departments = []; // Add departments list
+  String? departmentName; // Add department name variable
   int? doctorId;
   bool _isLoading = true;
   bool _isUploadingImage = false;
@@ -35,7 +37,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
   static const Color primaryColor = Color(0xFF2196F3);
   static const Color primaryDark = Color(0xFF1976D2);
   static const Color accentColor = Color(0xFFFF9800);
-  // static const Color accentLight = Color(0xFFFFB74D);
   static const Color backgroundColor = Color(0xFFF8FAFC);
   static const Color cardColor = Colors.white;
   static const Color errorColor = Color(0xFFE53E3E);
@@ -110,14 +111,18 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
       if (idString != null) {
         doctorId = int.tryParse(idString);
         if (doctorId != null) {
-          await fetchDoctor();
+          // Fetch both doctor and departments data
+          await Future.wait([
+            fetchDoctor(),
+            fetchDepartments(),
+          ]);
           if (mounted) {
             _animationController.forward();
           }
         }
       }
     } catch (e) {
-      _showSnackBar('Lỗi khi tải thông tin. Vui lòng thử lại!', errorColor);
+      _showSnackBar('Error loading information. Please try again.!', errorColor);
     } finally {
       setState(() => _isLoading = false);
     }
@@ -130,12 +135,50 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
       if (response.statusCode == 200) {
         setState(() {
           doctor = jsonDecode(response.body);
+          print(doctor);
+          // Find department name after fetching doctor data
+          _findDepartmentName();
         });
       } else {
-        _showSnackBar('Lỗi khi tải thông tin bác sĩ', errorColor);
+        _showSnackBar('Error loading doctor information', errorColor);
       }
     } catch (e) {
-      _showSnackBar('Lỗi kết nối. Vui lòng thử lại!', errorColor);
+      _showSnackBar('Connection error. Please try again.!', errorColor);
+    }
+  }
+
+  // Add method to fetch departments
+  Future<void> fetchDepartments() async {
+    final url = Uri.parse('http://10.0.2.2:8081/api/v1/departments/list');
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        setState(() {
+          departments = jsonDecode(response.body);
+          print('Departments: $departments');
+          // Find department name after fetching departments
+          _findDepartmentName();
+        });
+      } else {
+        _showSnackBar('Error loading departments', errorColor);
+      }
+    } catch (e) {
+      _showSnackBar('Connection error when loading departments', errorColor);
+    }
+  }
+
+  // Add method to find department name by ID
+  void _findDepartmentName() {
+    if (doctor != null && departments.isNotEmpty) {
+      final doctorDepartmentId = doctor!['department_id'];
+      final department = departments.firstWhere(
+            (dept) => dept['department_id'] == doctorDepartmentId,
+        orElse: () => null,
+      );
+
+      setState(() {
+        departmentName = department != null ? department['department_name'] : 'Unknown Department';
+      });
     }
   }
 
@@ -157,7 +200,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
           );
         }
       } catch (e) {
-        _showSnackBar('Lỗi khi đăng xuất. Vui lòng thử lại!', errorColor);
+        _showSnackBar('Error logging out. Please try again!', errorColor);
         setState(() => _isLoading = false);
       }
     }
@@ -183,7 +226,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Xác nhận đăng xuất',
+                'Confirm logout',
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -193,7 +236,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
             ],
           ),
           content: Text(
-            'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?',
+            'Are you sure you want to log out of your account??',
             style: GoogleFonts.inter(
               fontSize: 14,
               color: textSecondary,
@@ -208,10 +251,10 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               child: Text(
-                'Hủy',
+                'Cancel',
                 style: GoogleFonts.inter(
                   fontSize: 14,
-                  color: textSecondary,
+                  color: Colors.black,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -226,7 +269,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                 elevation: 0,
               ),
               child: Text(
-                'Đăng xuất',
+                'Logout',
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -342,7 +385,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Chọn ảnh đại diện',
+                    'Select avatar',
                     style: GoogleFonts.inter(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
@@ -352,16 +395,16 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                   const SizedBox(height: 24),
                   _buildImageSourceOption(
                     icon: Icons.photo_library_outlined,
-                    title: 'Chọn từ thư viện',
-                    subtitle: 'Chọn ảnh có sẵn trong thiết bị',
+                    title: 'Choose from the library',
+                    subtitle: 'Select a photo available on the device',
                     color: primaryColor,
                     onTap: () => Navigator.pop(context, ImageSource.gallery),
                   ),
                   const SizedBox(height: 16),
                   _buildImageSourceOption(
                     icon: Icons.camera_alt_outlined,
-                    title: 'Chụp ảnh mới',
-                    subtitle: 'Sử dụng camera để chụp ảnh',
+                    title: 'Take new photos',
+                    subtitle: 'Use the camera to take a photo',
                     color: accentColor,
                     onTap: () => Navigator.pop(context, ImageSource.camera),
                   ),
@@ -448,13 +491,13 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
       );
 
       if (response.statusCode == 200) {
-        _showSnackBar('Cập nhật ảnh đại diện thành công!', successColor);
+        _showSnackBar('Profile picture updated successfully!', successColor);
         await fetchDoctor();
       } else {
-        _showSnackBar('Cập nhật ảnh thất bại. Vui lòng thử lại.', errorColor);
+        _showSnackBar('Photo update failed. Please try again.', errorColor);
       }
     } catch (e) {
-      _showSnackBar('Lỗi kết nối. Vui lòng thử lại.', errorColor);
+      _showSnackBar('Connection error. Please try again.', errorColor);
     }
   }
 
@@ -514,7 +557,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
           ),
           const SizedBox(height: 24),
           Text(
-            'Đang tải thông tin...',
+            'Loading information...',
             style: GoogleFonts.inter(
               fontSize: 16,
               color: textSecondary,
@@ -528,7 +571,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
 
   Widget _buildSliverAppBar() {
     return SliverAppBar(
-      // automaticallyImplyLeading: false,
       expandedHeight: 320,
       floating: false,
       pinned: true,
@@ -557,29 +599,13 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                   child: Column(
                     children: [
                       Text(
-                        doctor!['doctor_name'] ?? 'Chưa có tên',
+                        doctor!['doctor_name'] ?? 'No name yet',
                         style: GoogleFonts.inter(
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
                         textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'ID: ${doctorId ?? 'Không xác định'}',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
                       ),
                     ],
                   ),
@@ -598,7 +624,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
               MaterialPageRoute(builder: (context) => const SettingsScreen()),
             );
           },
-          tooltip: 'Cài đặt',
+          tooltip: 'Setting',
         ),
       ],
     );
@@ -606,7 +632,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
 
   Widget _buildProfileAvatar() {
     return Stack(
-      clipBehavior: Clip.none, // Ensure the Positioned widget can extend outside
+      clipBehavior: Clip.none,
       children: [
         Container(
           decoration: BoxDecoration(
@@ -645,16 +671,16 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
           ),
         ),
         Positioned(
-          bottom: 0, // Move closer to the edge
-          right: 0,  // Move closer to the edge
+          bottom: 0,
+          right: 0,
           child: GestureDetector(
             onTap: _isUploadingImage ? null : _pickAndUploadImage,
             child: Container(
-              padding: const EdgeInsets.all(8), // Reduce padding
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: accentColor,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2), // Reduce border width
+                border: Border.all(color: Colors.white, width: 2),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.2),
@@ -665,14 +691,14 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
               ),
               child: _isUploadingImage
                   ? SizedBox(
-                width: 16, // Reduce size
+                width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
                   color: Colors.white,
                   strokeWidth: 2,
                 ),
               )
-                  : Icon(Icons.camera_alt, color: Colors.white, size: 16), // Reduce icon size
+                  : Icon(Icons.camera_alt, color: Colors.white, size: 16),
             ),
           ),
         ),
@@ -686,8 +712,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
         Expanded(
           child: _buildStatCard(
             icon: Icons.medical_services_outlined,
-            title: 'Khoa',
-            value: 'Khoa ${doctor!['department_id'] ?? 'N/A'}',
+            title: 'Department',
+            // Changed from department_id to department name
+            value: departmentName ?? 'Loading...',
             color: successColor,
           ),
         ),
@@ -695,8 +722,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
         Expanded(
           child: _buildStatCard(
             icon: Icons.attach_money,
-            title: 'Giá khám',
-            value: '${(doctor!['doctor_price'] as num?)?.toInt() ?? 0} VND',
+            title: 'Price',
+            value: '\$${(doctor!['doctor_price'] as num?)?.toInt() ?? 0}',
             color: accentColor,
           ),
         ),
@@ -787,7 +814,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Thông tin chi tiết',
+                  'Detailed information',
                   style: GoogleFonts.inter(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -797,12 +824,10 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
               ],
             ),
             const SizedBox(height: 24),
-            _buildDetailItem(Icons.account_circle_outlined, 'Tên đăng nhập', doctor!['doctor_username']),
             _buildDetailItem(Icons.email_outlined, 'Email', doctor!['doctor_email']),
-            _buildDetailItem(Icons.phone_outlined, 'Số điện thoại', '0${doctor!['doctor_phone'].toString()}'),
-            _buildDetailItem(Icons.location_on_outlined, 'Địa chỉ', doctor!['doctor_address']),
-            _buildDetailItem(Icons.work_outline, 'Trạng thái', doctor!['working_status'] ?? 'Không rõ'),
-            _buildDetailItem(Icons.description_outlined, 'Tóm tắt', doctor!['summary'] ?? 'Chưa có tóm tắt', isLast: true),
+            _buildDetailItem(Icons.phone_outlined, 'Phone number', '0${doctor!['doctor_phone'].toString()}'),
+            _buildDetailItem(Icons.location_on_outlined, 'Address', doctor!['doctor_address']),
+            _buildDetailItem(Icons.description_outlined, 'Summary', doctor!['summary'] ?? '', isLast: true),
           ],
         ),
       ),
@@ -838,7 +863,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  value ?? 'Chưa có thông tin',
+                  value ?? 'No information yet',
                   style: GoogleFonts.inter(
                     fontSize: 15,
                     color: textColor,
@@ -885,7 +910,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
             ),
             icon: const Icon(Icons.edit_outlined, size: 22),
             label: Text(
-              'Chỉnh sửa thông tin',
+              'Edit information',
               style: GoogleFonts.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -917,7 +942,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
             )
                 : const Icon(Icons.logout, size: 22),
             label: Text(
-              'Đăng xuất',
+              'Logout',
               style: GoogleFonts.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
