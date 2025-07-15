@@ -1,0 +1,446 @@
+create database fpthealth
+use fpthealth
+
+-- Create table: departments
+CREATE TABLE departments (
+    department_id INT PRIMARY KEY,
+    department_name VARCHAR(100) NOT NULL,
+    location VARCHAR(255),
+    department_img VARCHAR(255),
+    department_description TEXT,
+    summary TEXT
+);
+
+-- Create table: doctors
+CREATE TABLE doctors (
+    doctor_id INT PRIMARY KEY,
+    doctor_name VARCHAR(100) NOT NULL,
+    doctor_phone INT,
+    doctor_address VARCHAR(255),
+    doctor_email VARCHAR(100) UNIQUE,
+    department_id INT,
+    doctor_username VARCHAR(50) UNIQUE,
+    doctor_password VARCHAR(255),
+    summary TEXT,
+    doctor_image VARCHAR(1000),
+    doctor_price DECIMAL(10, 2),
+    doctor_description TEXT,
+    working_status VARCHAR(50),
+    FOREIGN KEY (department_id) REFERENCES departments(department_id)
+);
+
+
+-- Create table: staffs
+CREATE TABLE staffs (
+    staff_id INT PRIMARY KEY,
+    staff_name VARCHAR(100) NOT NULL,
+    staff_phone INT,
+    staff_address VARCHAR(255),
+    staff_type VARCHAR(50),
+    staff_status VARCHAR(50),
+    staff_username VARCHAR(50) UNIQUE,
+    staff_password VARCHAR(255),
+    staff_email VARCHAR(100) UNIQUE
+);
+
+-- Create table: appointments
+CREATE TABLE appointments (
+    appointment_id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT,
+    doctor_id INT,
+    appointment_date DATE,
+    medical_day DATE,
+    slot INT,
+    status VARCHAR(50),
+    payment_name VARCHAR(100),
+    price DECIMAL(10, 2),
+    staff_id INT,
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id),
+    FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id),
+    FOREIGN KEY (staff_id) REFERENCES staffs(staff_id)
+);
+
+CREATE TABLE medicalrecords (
+    record_id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT NOT NULL,
+    symptoms TEXT,
+    diagnosis TEXT,
+    treatment TEXT,
+    prescription TEXT,
+    follow_up_date DATE,
+    doctor_id INT NOT NULL,
+    severity DECIMAL(10, 2),
+    image longtext,
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id),
+    FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id)
+);
+ALTER TABLE Medicalrecords MODIFY COLUMN image LONGTEXT;
+
+
+-- Create table: feedback
+CREATE TABLE feedback (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100),
+    phone VARCHAR(20),
+    email VARCHAR(100),
+    subject VARCHAR(255),
+    message TEXT,
+    created_at DATETIME
+);
+
+
+
+-- Create table: feedback_reply (based on FeedbackReplyDto, assuming it's a table)
+CREATE TABLE feedback_reply (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100),
+    email VARCHAR(100),
+    message TEXT
+);
+
+
+-- Insert data into cities table
+INSERT INTO cities (city_id, city_name, city_created_at, city_updated_at) VALUES
+(1, 'Hanoi', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(2, 'Ho Chi Minh City', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(3, 'Da Nang', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(4, 'Hai Phong', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(5, 'Can Tho', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(6, 'Hue', '2025-05-12 10:00:00', '2025-05-12 0:00:00'),
+(7, 'Nha Trang', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(8, 'Vung Tau', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(9, 'Quang Ninh', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(10, 'Thai Nguyen', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(11, 'Bac Ninh', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(12, 'Vinh', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(13, 'Phu Quoc', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(14, 'Da Lat', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(15, 'Buon Ma Thuot', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(16, 'Long An', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(17, 'Dong Nai', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(18, 'Binh Duong', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(19, 'Tien Giang', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(20, 'Kien Giang', '2025-05-12 10:00:00', '2025-05-12 10:00:00');
+
+-- Insert data into hospitals table
+INSERT INTO hospitals (hospital_id, hospital_name, address, city_id, phone_number, zip_code, latitude, longitude, hospital_created_at, hospital_updated_at) VALUES
+(1, 'Bach Mai Hospital', '78 Giai Phong, Hanoi', 1, '02438693731', '100000', 21.007, 105.839, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(2, 'Cho Ray Hospital', '201B Nguyen Chi Thanh, HCMC', 2, '02838554137', '700000', 10.756, 106.659, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(3, 'Da Nang Hospital', '124 Hai Phong, Da Nang', 3, '02363821111', '550000', 16.060, 108.220, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(4, 'Viet Duc Hospital', '40 Trang Thi, Hanoi', 1, '02438253531', '100000', 21.031, 105.851, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(5, 'Can Tho Central Hospital', '315 Nguyen Van Cu, Can Tho', 5, '02923821111', '900000', 10.037, 105.788, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(6, 'Hue Central Hospital', '16 Le Loi, Hue', 6, '02343822441', '530000', 16.469, 107.589, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(7, 'Khanh Hoa General Hospital', '19 Yersin, Nha Trang', 7, '02583821111', '650000', 12.245, 109.194, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(8, 'Vung Tau General Hospital', '123 Le Loi, Vung Tau', 8, '02543852111', '790000', 10.346, 107.084, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(9, 'Bai Chay Hospital', 'Ha Long, Quang Ninh', 9, '02033841111', '200000', 20.951, 107.057, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(10, 'Thai Nguyen Central Hospital', '479 Luong Ngoc Quyen, Thai Nguyen', 10, '02083851111', '250000', 21.592, 105.849, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(11, 'Bac Ninh General Hospital', '123 Nguyen Trai, Bac Ninh', 11, '02223821111', '160000', 21.186, 106.076, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(12, 'Nghe An General Hospital', '178 Tran Phu, Vinh', 12, '02383861111', '460000', 18.679, 105.692, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(13, 'Phu Quoc General Hospital', 'Duong Dong, Phu Quoc', 13, '02973821111', '920000', 10.215, 103.959, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(14, 'Lam Dong General Hospital', '4 Pham Ngoc Thach, Da Lat', 14, '02633821111', '670000', 11.940, 108.458, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(15, 'Dak Lak General Hospital', '2 Nguyen Tat Thanh, Buon Ma Thuot', 15, '02623851111', '630000', 12.681, 108.038, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(16, 'Long An General Hospital', '123 Nguyen Thong, Long An', 16, '02723821111', '850000', 10.533, 106.405, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(17, 'Dong Nai General Hospital', '2 Dong Khoi, Bien Hoa', 17, '02513821111', '760000', 10.957, 106.817, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(18, 'Binh Duong General Hospital', '5 Pham Ngoc Thach, Thu Dau Mot', 18, '02743821111', '750000', 11.007, 106.657, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(19, 'Tien Giang General Hospital', '123 Le Loi, My Tho', 19, '02733821111', '860000', 10.360, 106.360, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(20, 'Kien Giang General Hospital', '46 Le Loi, Rach Gia', 20, '02973821111', '910000', 10.015, 105.080, '2025-05-12 10:00:00', '2025-05-12 10:00:00');
+
+-- Insert data into drivers table
+INSERT INTO drivers (driver_id, driver_name, email, password, driver_phone, license_number, status, latitude, longitude, driver_created_at, driver_updated_at, hospital_id) VALUES
+(1, 'Nguyen Van Nam', 'driver1@example.com', 'password123', '0912345671', 'LIC001', 'AVAILABLE', 21.008, 105.840, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 1),
+(2, 'Tran Thi Bac', 'driver2@example.com', 'password123', '0912345672', 'LIC002', 'AVAILABLE', 10.757, 106.660, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 2),
+(3, 'Le Van Chu', 'driver3@example.com', 'password123', '0912345673', 'LIC003', 'AVAILABLE', 16.061, 108.221, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 3),
+(4, 'Pham Thi Dinh', 'driver4@example.com', 'password123', '0912345674', 'LIC004', 'AVAILABLE', 21.032, 105.852, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 4),
+(5, 'Hoang Van Em', 'driver5@example.com', 'password123', '0912345675', 'LIC005', 'AVAILABLE', 10.038, 105.789, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 5),
+(6, 'Nguyen Thi Fu', 'driver6@example.com', 'password123', '0912345676', 'LIC006', 'AVAILABLE', 16.470, 107.590, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 6),
+(7, 'Tran Van Giau', 'driver7@example.com', 'password123', '0912345677', 'LIC007', 'AVAILABLE', 12.246, 109.195, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 7),
+(8, 'Le Thi Hai', 'driver8@example.com', 'password123', '0912345678', 'LIC008', 'AVAILABLE', 10.347, 107.085, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 8),
+(9, 'Pham Van Im', 'driver9@example.com', 'password123', '0912345679', 'LIC009', 'AVAILABLE', 20.952, 107.058, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 9),
+(10, 'Hoang Thi Thao', 'driver10@example.com', 'password123', '0912345680', 'LIC010', 'AVAILABLE', 21.593, 105.850, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 10),
+(11, 'Nguyen Van Khai', 'driver11@example.com', 'password123', '0912345681', 'LIC011', 'AVAILABLE', 21.187, 106.077, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 11),
+(12, 'Tran Thi Lam', 'driver12@example.com', 'password123', '0912345682', 'LIC012', 'AVAILABLE', 18.680, 105.693, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 12),
+(13, 'Le Van Mui', 'driver13@example.com', 'password123', '0912345683', 'LIC013', 'AVAILABLE', 10.216, 103.960, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 13),
+(14, 'Pham Thi Nhung', 'driver14@example.com', 'password123', '0912345684', 'LIC014', 'AVAILABLE', 11.941, 108.459, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 14),
+(15, 'Hoang Van Om', 'driver15@example.com', 'password123', '0912345685', 'LIC015', 'AVAILABLE', 12.682, 108.039, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 15),
+(16, 'Nguyen Thi Phuong', 'driver16@example.com', 'password123', '0912345686', 'LIC016', 'AVAILABLE', 10.534, 106.406, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 16),
+(17, 'Tran Van Quy', 'driver17@example.com', 'password123', '0912345687', 'LIC017', 'AVAILABLE', 10.958, 106.818, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 17),
+(18, 'Le Thi Rui', 'driver18@example.com', 'password123', '0912345688', 'LIC018', 'AVAILABLE', 11.008, 106.658, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 18),
+(19, 'Pham Van Sau', 'driver19@example.com', 'password123', '0912345689', 'LIC019', 'AVAILABLE', 10.361, 106.361, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 19),
+(20, 'Hoang Thi Thao', 'driver20@example.com', 'password123', '0912345690', 'LIC020', 'AVAILABLE', 10.016, 105.081, '2025-05-12 10:00:00', '2025-05-12 10:00:00', 20);
+
+-- Insert data into ambulances table
+INSERT INTO ambulances (ambulance_id, ambulance_number, driver_id, ambulance_status, ambulance_type, hospital_id, ambulance_created_at, ambulance_updated_at) VALUES
+(1, 'AMB001', 1, 'AVAILABLE', 'BASIC', 1, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(2, 'AMB002', 2, 'AVAILABLE', 'ADVANCED', 2, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(3, 'AMB003', 3, 'AVAILABLE', 'BASIC', 3, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(4, 'AMB004', 4, 'AVAILABLE', 'ADVANCED', 4, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(5, 'AMB005', 5, 'AVAILABLE', 'BASIC', 5, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(6, 'AMB006', 6, 'AVAILABLE', 'ADVANCED', 6, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(7, 'AMB007', 7, 'AVAILABLE', 'BASIC', 7, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(8, 'AMB008', 8, 'AVAILABLE', 'ADVANCED', 8, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(9, 'AMB009', 9, 'AVAILABLE', 'BASIC', 9, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(10, 'AMB010', 10, 'AVAILABLE', 'ADVANCED', 10, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(11, 'AMB011', 11, 'AVAILABLE', 'BASIC', 11, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(12, 'AMB012', 12, 'AVAILABLE', 'ADVANCED', 12, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(13, 'AMB013', 13, 'AVAILABLE', 'BASIC', 13, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(14, 'AMB014', 14, 'AVAILABLE', 'ADVANCED', 14, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(15, 'AMB015', 15, 'AVAILABLE', 'BASIC', 15, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(16, 'AMB016', 16, 'AVAILABLE', 'ADVANCED', 16, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(17, 'AMB017', 17, 'AVAILABLE', 'BASIC', 17, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(18, 'AMB018', 18, 'AVAILABLE', 'ADVANCED', 18, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(19, 'AMB019', 19, 'AVAILABLE', 'BASIC', 19, '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(20, 'AMB020', 20, 'AVAILABLE', 'ADVANCED', 20, '2025-05-12 10:00:00', '2025-05-12 10:00:00');
+
+-- Insert data into driverlocation table
+INSERT INTO driverlocation (id, driver_id, latitude, longitude) VALUES
+(1, 1, 21.008, 105.840),
+(2, 2, 10.757, 106.660),
+(3, 3, 16.061, 108.221),
+(4, 4, 21.032, 105.852),
+(5, 5, 10.038, 105.789),
+(6, 6, 16.470, 107.590),
+(7, 7, 12.246, 109.195),
+(8, 8, 10.347, 107.085),
+(9, 9, 20.952, 107.058),
+(10, 10, 21.593, 105.850),
+(11, 11, 21.187, 106.077),
+(12, 12, 18.680, 105.693),
+(13, 13, 10.216, 103.960),
+(14, 14, 11.941, 108.459),
+(15, 15, 12.682, 108.039),
+(16, 16, 10.534, 106.406),
+(17, 17, 10.958, 106.818),
+(18, 18, 11.008, 106.658),
+(19, 19, 10.361, 106.361),
+(20, 20, 10.016, 105.081);
+
+-- Insert data into patientlocation table
+INSERT INTO patientlocation (id, patient_id, latitude, longitude, destination_latitude, destination_longitude, booking_status, created_at, updated_at) VALUES
+(1, 1, 21.010, 105.841, 21.007, 105.839, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(2, 2, 10.758, 106.661, 10.756, 106.659, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(3, 3, 16.062, 108.222, 16.060, 108.220, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(4, 4, 21.033, 105.853, 21.031, 105.851, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(5, 5, 10.039, 105.790, 10.037, 105.788, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(6, 6, 16.471, 107.591, 16.469, 107.589, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(7, 7, 12.247, 109.196, 12.245, 109.194, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(8, 8, 10.348, 107.086, 10.346, 107.084, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(9, 9, 20.953, 107.059, 20.951, 107.057, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(10, 10, 21.594, 105.851, 21.592, 105.849, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(11, 11, 21.188, 106.078, 21.186, 106.076, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(12, 12, 18.681, 105.694, 18.679, 105.692, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(13, 13, 10.217, 103.961, 10.215, 103.959, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(14, 14, 11.942, 108.460, 11.940, 108.458, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(15, 15, 12.683, 108.040, 12.681, 108.038, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(16, 16, 10.535, 106.407, 10.533, 106.405, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(17, 17, 10.959, 106.819, 10.957, 106.817, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(18, 18, 11.009, 106.659, 11.007, 106.657, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(19, 19, 10.362, 106.362, 10.360, 106.360, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00'),
+(20, 20, 10.017, 105.082, 10.015, 105.080, 'PENDING', '2025-05-12 10:00:00', '2025-05-12 10:00:00');
+
+-- Insert data into admins table
+INSERT INTO admins (admin_id, admin_name, admin_email, admin_password, admin_phone, admin_address, admin_created_at, admin_updated_at) VALUES
+(1, 'Admin One', 'admin1@example.com', 'admin123', '0901234561', '789 Tran Hung Dao, Hanoi', '2025-05-12 10:00:00', '2025-05-12 10:00:00');
+
+-- Insert data into departments
+INSERT INTO departments (department_id, department_name, location, department_img, department_description, summary) VALUES
+(1, 'Cardiology', 'Hanoi', '/images/cardiology.jpg', 'Specializes in diagnosing and treating heart conditions, including coronary artery disease, heart failure, and arrhythmias. Offers advanced procedures like angioplasty, pacemaker implantation, and echocardiograms.', 'Expert heart care'),
+(2, 'Neurology', 'Ho Chi Minh City', '/images/neurology.jpg', 'Focuses on disorders of the brain, spinal cord, and nervous system, such as stroke, epilepsy, and Parkinson’s disease. Provides EEG, MRI, and nerve conduction studies.', 'Brain and nerve specialists'),
+(3, 'Orthopedics', 'Da Nang', '/images/orthopedics.jpg', 'Treats musculoskeletal conditions, including fractures, joint replacements, and spinal disorders. Offers minimally invasive surgeries and physical therapy support.', 'Bone and joint experts'),
+(4, 'Pediatrics', 'Can Tho', '/images/pediatrics.jpg', 'Provides comprehensive care for infants, children, and adolescents, including vaccinations, developmental assessments, and treatment of pediatric illnesses.', 'Child healthcare specialists'),
+(5, 'Oncology', 'Hai Phong', '/images/oncology.jpg', 'Specializes in cancer diagnosis and treatment, including chemotherapy, radiation therapy, and immunotherapy for cancers like breast, lung, and leukemia.', 'Cancer care experts'),
+(6, 'Dermatology', 'Hue', '/images/dermatology.jpg', 'Treats skin, hair, and nail conditions, such as acne, eczema, psoriasis, and skin cancer. Offers cosmetic procedures like laser therapy and chemical peels.', 'Skin and hair specialists'),
+(7, 'Gastroenterology', 'Nha Trang', '/images/gastroenterology.jpg', 'Diagnoses and treats digestive system disorders, including ulcers, IBS, and liver diseases. Performs endoscopies and colonoscopies.', 'Digestive health experts'),
+(8, 'Ophthalmology', 'Vung Tau', '/images/ophthalmology.jpg', 'Provides eye care, including cataract surgery, LASIK, and treatment for glaucoma and retinal disorders. Uses advanced diagnostic tools like OCT.', 'Eye care specialists'),
+(9, 'ENT', 'Quang Ninh', '/images/ent.jpg', 'Specializes in ear, nose, and throat conditions, such as sinusitis, hearing loss, and tonsillitis. Offers surgical interventions like tonsillectomy and septoplasty.', 'ENT care experts'),
+(10, 'Urology', 'Thai Nguyen', '/images/urology.jpg', 'Treats urinary tract and male reproductive system disorders, including kidney stones, prostate issues, and bladder conditions. Performs minimally invasive surgeries.', 'Urinary and reproductive health');
+-- (11, 'Endocrinology', 'Bac Ninh', '/images/endocrinology.jpg', 'Manages hormonal disorders like diabetes, thyroid diseases, and adrenal issues. Offers hormone therapy and metabolic assessments.', 'Hormone and diabetes specialists'),
+-- (12, 'Psychiatry', 'Vinh', '/images/psychiatry.jpg', 'Provides mental health care for conditions like depression, anxiety, and schizophrenia. Offers therapy, counseling, and medication management.', 'Mental health experts'),
+-- (13, 'Rheumatology', 'Phu Quoc', '/images/rheumatology.jpg', 'Treats autoimmune and joint diseases, such as rheumatoid arthritis, lupus, and osteoarthritis. Provides biologic therapies and joint injections.', 'Joint and autoimmune specialists'),
+-- (14, 'Nephrology', 'Da Lat', '/images/nephrology.jpg', 'Specializes in kidney diseases, including chronic kidney disease, dialysis, and kidney transplants. Offers renal function testing and hypertension management.', 'Kidney care experts'),
+-- (15, 'Pulmonology', 'Buon Ma Thuot', '/images/pulmonology.jpg', 'Treats respiratory conditions like asthma, COPD, and pulmonary fibrosis. Provides bronchoscopy and pulmonary function testing.', 'Lung and respiratory specialists'),
+-- (16, 'Hematology', 'Long An', '/images/hematology.jpg', 'Diagnoses and treats blood disorders, including anemia, leukemia, and clotting disorders. Offers bone marrow biopsies and transfusion services.', 'Blood disorder experts'),
+-- (17, 'Gynecology', 'Bien Hoa', '/images/gynecology.jpg', 'Focuses on women’s reproductive health, including pregnancy care, infertility, and menstrual disorders. Performs hysterectomies and laparoscopic surgeries.', 'Women’s health specialists'),
+-- (18, 'Anesthesiology', 'Thu Dau Mot', '/images/anesthesiology.jpg', 'Provides anesthesia for surgeries and manages acute and chronic pain. Specializes in regional, general, and local anesthesia techniques.', 'Anesthesia and pain experts'),
+-- (19, 'Radiology', 'My Tho', '/images/radiology.jpg', 'Offers medical imaging services, including X-rays, CT scans, MRIs, and ultrasounds. Supports diagnostic and interventional radiology.', 'Medical imaging specialists'),
+-- (20, 'General Surgery', 'Rach Gia', '/images/generalsurgery.jpg', 'Performs a wide range of surgical procedures, including appendectomies, hernia repairs, and laparoscopic surgeries. Focuses on minimally invasive techniques.', 'Surgical care experts');
+
+-- Insert data into doctors
+INSERT INTO doctors (doctor_id, doctor_name, doctor_phone, doctor_address, doctor_email, department_id, doctor_username, doctor_password, summary, doctor_image, doctor_price, doctor_description, working_status) VALUES
+-- Cardiology (department_id: 1)
+(1, 'Dr. Nguyen Van An', '0912345001', '123 Giai Phong, Hanoi', 'nguyen.an@hospital.com', 1, 'nguyenan1', 'password123', 'Expert in cardiology.', 'https://t4.ftcdn.net/jpg/02/60/04/09/360_F_260040900_oO6YW1sHTnKxby4GcjCvtypUCWjnQRg5.jpg', 100.00, 'Specializes in heart surgery and cardiovascular diseases.', 'ACTIVE'),
+(2, 'Dr. Tran Thi Bich', '0912345002', '456 Nguyen Trai, HCMC', 'tran.bich@hospital.com', 1, 'tranbich1', 'password123', 'Cardiology specialist.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQZBWCliJUjCPiZRPvDOQnuXUS8XqBQPaXeLw&s', 105.00, 'Focuses on heart rhythm disorders.', 'ACTIVE'),
+(3, 'Dr. Le Van Cuong', '0912345003', '789 Hai Ba Trung, Da Nang', 'le.cuong@hospital.com', 1, 'lecuong1', 'password123', 'Heart disease expert.', 'https://static.vecteezy.com/system/resources/thumbnails/026/375/249/small_2x/ai-generative-portrait-of-confident-male-doctor-in-white-coat-and-stethoscope-standing-with-arms-crossed-and-looking-at-camera-photo.jpg', 102.00, 'Manages heart failure cases.', 'ACTIVE'),
+(4, 'Dr. Pham Thi Dung', '0912345004', '101 Trang Thi, Hanoi', 'pham.dung@hospital.com', 1, 'phamdung1', 'password123', 'Cardiologist.', 'https://thumbs.dreamstime.com/b/smiling-medical-doctor-woman-stethoscope-isolated-over-white-background-35552912.jpg', 98.00, 'Expert in non-invasive cardiology.', 'ACTIVE'),
+(5, 'Dr. Hoang Van Em', '0912345005', '315 Nguyen Van Cu, Can Tho', 'hoangem@hospital.com', 1, 'hoangem1', 'password123', 'Cardiovascular expert.', 'https://plus.unsplash.com/premium_photo-1658506671316-0b293df7c72b?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8ZG9jdG9yfGVufDB8fDB8fHww', 103.00, 'Specializes in interventional cardiology.', 'ACTIVE'),
+(51,'Dr. Le Dinh Nguyen', '0349740970', 'Tan Thinh , Hoa Quy, NHư Xuan, Thanh Hoa', 'ledinhnguyen191120000@gmail.com', 1, 'dinhnguyen', 'nguyen123', 'Cardiovascular expert.', 'https://scontent.fhan2-5.fna.fbcdn.net/v/t39.30808-1/504156981_1225725802676775_3422175998904227534_n.jpg?stp=dst-jpg_s200x200_tt6&_nc_cat=106&ccb=1-7&_nc_sid=1d2534&_nc_eui2=AeELRdAKgZz-e0PCxiUgM-GHzETLTOEySS3MRMtM4TJJLbIrOP-U88bxa8Gqs8Bhx4k1E8WAQjoB92zDNu9xnLJp&_nc_ohc=27wFKQXfoYoQ7kNvwGlUFJr&_nc_oc=AdlaFVL8LbEptoJzx5mtDo8yhJeTDH7e1f9xQyz0TBp36AWje5z7w3CM-lLYsRU42VaOe7KkwrJy9-wGxBu64IyN&_nc_zt=24&_nc_ht=scontent.fhan2-5.fna&_nc_gid=ajH2MCUmDnYXA6dKmRfRAw&oh=00_AfQWIE1ggRYHyfXIkgMkWnPF4Z5vdK9cN6EZlEjVEqlZ_w&oe=6875A272', 100.00, 'Specializes in interventional cardiology.', 'ACTIVE'),
+-- Neurology (department_id: 2)
+(6, 'Dr. Nguyen Thi Phuong', '0912345006', '16 Le Loi, Hue', 'nguyen.phuong@hospital.com', 2, 'nguyenphuong2', 'password123', 'Neurology specialist.', 'https://img.freepik.com/free-photo/female-doctor-hospital-with-stethoscope_23-2148827776.jpg?semt=ais_hybrid&w=740', 120.00, 'Treats brain disorders and epilepsy.', 'ACTIVE'),
+(7, 'Dr. Tran Van Giang', '0912345007', '19 Yersin, Nha Trang', 'tran.giang@hospital.com', 2, 'trangiang2', 'password123', 'Neurologist.', 'https://www.shutterstock.com/image-photo/portrait-handsome-male-doctor-stethoscope-600nw-2480850611.jpg', 122.00, 'Focuses on stroke management.', 'ACTIVE'),
+(8, 'Dr. Le Thi Hoa', '0912345008', '123 Le Loi, Vung Tau', 'le.hoa@hospital.com', 2, 'lehoa2', 'password123', 'Brain specialist.', 'https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDI0LTA1L3Jhd3BpeGVsb2ZmaWNlMV9waG90b2dyYXBoeV9vZl9hbl9zb3V0aF9pbmRpYW5fd29tZW5fYXNfYV9kb2N0b19kMzAxMDM3Zi03MDUzLTQxNDAtYmYyZS1lZDFlYWE0YTM3NDQucG5n.png', 118.00, 'Expert in neurodegenerative diseases.', 'ACTIVE'),
+(9, 'Dr. Pham Van Ich', '0912345009', 'Ha Long, Quang Ninh', 'pham.ich@hospital.com', 2, 'phamich2', 'password123', 'Neurology expert.', 'https://hips.hearstapps.com/hmg-prod/images/portrait-of-a-happy-young-doctor-in-his-clinic-royalty-free-image-1661432441.jpg', 121.00, 'Specializes in migraines and headaches.', 'ACTIVE'),
+(10, 'Dr. Hoang Thi Kim', '0912345010', '479 Luong Ngoc Quyen, Thai Nguyen', 'hoang.kim@hospital.com', 2, 'hoangkim2', 'password123', 'Neurologist.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQwHX7cwtsU3OMkeZcSq1DDy1Sx5G1CXNid5w&s', 119.00, 'Manages nerve disorders.', 'ACTIVE'),
+-- Orthopedics (department_id: 3)
+(11, 'Dr. Nguyen Van Khanh', '0912345011', '123 Nguyen Trai, Bac Ninh', 'nguyen.khanh@hospital.com', 3, 'nguyenkhanh3', 'password123', 'Orthopedic surgeon.', 'https://snibbs.co/cdn/shop/articles/What_are_the_Challenges_of_Being_a_Doctor.jpg?v=1684314843', 110.00, 'Bone and joint surgery expert.', 'ACTIVE'),
+(12, 'Dr. Tran Thi Lan', '0912345012', '178 Tran Phu, Vinh', 'tran.lan@hospital.com', 3, 'tranlan3', 'password123', 'Orthopedist.', 'https://images.rawpixel.com/image_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTA5L3Jhd3BpeGVsb2ZmaWNlMl9waG90b19vZl9hX2JsYWNrX3BsdXNfc2l6ZV9mZW1hbGVfZG9jdG9yX2luX2hvc19mOGU4MTBlMi1kOWEyLTQ5OTMtOWM0Zi1kNWI2OTQ5ODVmZTNfMi5qcGc.jpg', 112.00, 'Specializes in joint replacement.', 'ACTIVE'),
+(13, 'Dr. Le Van Minh', '0912345013', 'Duong Dong, Phu Quoc', 'le.minh@hospital.com', 3, 'leminh3', 'password123', 'Bone specialist.', 'https://online-learning-college.com/wp-content/uploads/2023/01/Qualifications-to-Become-a-Doctor--scaled.jpg', 108.00, 'Treats fractures and dislocations.', 'ACTIVE'),
+(14, 'Dr. Pham Thi Nga', '0912345014', '4 Pham Ngoc Thach, Da Lat', 'pham.nga@hospital.com', 3, 'phamnga3', 'password123', 'Orthopedic expert.', 'https://images.stockcake.com/public/6/a/7/6a7cde76-ad7d-4445-b096-47822b2e6dc4_large/confident-female-doctor-stockcake.jpg', 111.00, 'Focuses on spinal surgeries.', 'ACTIVE'),
+(15, 'Dr. Hoang Van On', '0912345015', '2 Nguyen Tat Thanh, Buon Ma Thuot', 'hoang.on@hospital.com', 3, 'hoangon3', 'password123', 'Joint specialist.', 'https://www.mua.edu/uploads/sites/10/2023/03/board-certified-doctor-meaning.webp', 109.00, 'Manages arthritis and joint pain.', 'ACTIVE'),
+-- Pediatrics (department_id: 4)
+(16, 'Dr. Nguyen Thi Quy', '0912345016', '123 Nguyen Thong, Long An', 'nguyen.quy@hospital.com', 4, 'nguyenquy4', 'password123', 'Pediatric care.', 'https://img.freepik.com/free-photo/beautiful-caucasian-oculist-woman-wearing-robe-optometry-glasses-with-serious-expression-face-simple-natural-looking-camera_839833-6929.jpg?semt=ais_hybrid&w=740', 90.00, 'Child health specialist.', 'ACTIVE'),
+(17, 'Dr. Tran Van Son', '0912345017', '2 Dong Khoi, Bien Hoa', 'tran.son@hospital.com', 4, 'transon4', 'password123', 'Pediatrician.', 'https://familydoctor.org/wp-content/uploads/2018/02/41808433_l.jpg', 92.00, 'Focuses on neonatal care.', 'ACTIVE'),
+(18, 'Dr. Le Thi Tuyet', '0912345018', '5 Pham Ngoc Thach, Thu Dau Mot', 'le.tuyet@hospital.com', 4, 'letuyet4', 'password123', 'Child specialist.', 'https://t4.ftcdn.net/jpg/06/47/16/29/360_F_647162966_SFu8GP6awkeW0OnFnAxPjiGXSoeme4ht.jpg', 88.00, 'Treats pediatric infections.', 'ACTIVE'),
+(19, 'Dr. Pham Van Ut', '0912345019', '123 Le Loi, My Tho', 'pham.ut@hospital.com', 4, 'phamut4', 'password123', 'Pediatric expert.', 'https://img.freepik.com/free-photo/portrait-male-doctor_23-2148480369.jpg?semt=ais_hybrid&w=740', 91.00, 'Manages child growth disorders.', 'ACTIVE'),
+(20, 'Dr. Hoang Thi Vinh', '0912345020', '46 Le Loi, Rach Gia', 'hoangvinh@hospital.com', 4, 'hoangvinh4', 'password123', 'Pediatric specialist.', 'https://t4.ftcdn.net/jpg/03/20/74/45/360_F_320744517_TaGkT7aRlqqWdfGUuzRKDABtFEoN5CiO.jpg', 89.00, 'Specializes in pediatric allergies.', 'ACTIVE'),
+-- Oncology (department_id: 5)
+(21, 'Dr. Nguyen Van Xuan', '0912345021', '123 Giai Phong, Hanoi', 'nguyenxuan@hospital.com', 5, 'nguyenxuan5', 'password123', 'Oncology expert.', 'https://i.pinimg.com/736x/f4/c9/ef/f4c9ef33d04a22050038e9e53eeb7d85.jpg', 130.00, 'Cancer treatment specialist.', 'ACTIVE'),
+(22, 'Dr. Tran Thi Yen', '0912345022', '456 Nguyen Trai, HCMC', 'tranyen@hospital.com', 5, 'tranyen5', 'password123', 'Oncologist.', 'https://thumbs.dreamstime.com/b/indian-beautiful-female-doctor-18398918.jpg', 132.00, 'Focuses on chemotherapy.', 'ACTIVE'),
+(23, 'Dr. Le Van Anh', '0912345023', '789 Hai Ba Trung, Da Nang', 'leanh@hospital.com', 5, 'leanh5', 'password123', 'Cancer specialist.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSv3FkSx0rxzkqmcJHKTM8ElqTI0RGsMMmQmovDRPMOJG3N8c2osbeCQri9A5btve5P_No&usqp=CAU', 128.00, 'Manages radiation therapy.', 'ACTIVE'),
+(24, 'Dr. Pham Thi Binh', '0912345024', '101 Trang Thi, Hanoi', 'phambinh@hospital.com', 5, 'phambinh5', 'password123', 'Oncology specialist.', 'https://media.istockphoto.com/id/1292012984/photo/portrait-female-doctor-stock-photo.jpg?s=612x612&w=0&k=20&c=u75XzgB3QWKj9EM3WQyhQQpgU9OhKaRe77a-LP7I1M8=', 131.00, 'Treats breast cancer.', 'ACTIVE'),
+(25, 'Dr. Hoang Van Canh', '0912345025', '315 Nguyen Van Cu, Can Tho', 'hoang.canh@hospital.com', 5, 'hoangcanh5', 'password123', 'Tumor expert.', 'https://img.freepik.com/premium-photo/doctor-man-with-glasses-stethoscope-is-standing-his-sunny-hospital-office-perfect-medical-service-clinic-happy-future-medicine-healthcare_665183-10952.jpg', 129.00, 'Specializes in lung cancer.', 'ACTIVE'),
+-- Dermatology (department_id: 6)
+(26, 'Dr. Nguyen Thi Dieu', '0912345026', '16 Le Loi, Hue', 'nguyen.dieu@hospital.com', 6, 'nguyendieu6', 'password123', 'Dermatology specialist.', 'https://media.istockphoto.com/id/1301595548/photo/female-doctor-stock-photo.jpg?s=612x612&w=0&k=20&c=s9kTlQCWJcYmCyMwYwJfTq7jiC1NfHaXzZyGhi4fRHM=', 95.00, 'Skin care expert.', 'ACTIVE'),
+(27, 'Dr. Tran Van En', '0912345027', '19 Yersin, Nha Trang', 'tran.en@hospital.com', 6, 'tranen6', 'password123', 'Dermatologist.', 'https://nypost.com/wp-content/uploads/sites/2/2020/08/black-doctor-1.jpg?quality=75&strip=all&w=744', 97.00, 'Treats skin allergies.', 'ACTIVE'),
+(28, 'Dr. Le Thi Giau', '0912345028', '123 Le Loi, Vung Tau', 'le.giau@hospital.com', 6, 'legiau6', 'password123', 'Skin specialist.', 'https://i.pinimg.com/736x/c5/a3/90/c5a3904b38eb241dd03dd30889599dc4.jpg', 93.00, 'Manages acne and eczema.', 'ACTIVE'),
+(29, 'Dr. Pham Van Hung', '0912345029', 'Ha Long, Quang Ninh', 'pham.hung@hospital.com', 6, 'phamhung6', 'password123', 'Dermatology expert.', 'https://m.media-amazon.com/images/S/pv-target-images/069353fc8605a620c054a3e81e88d28aa0579632824878b9fdeed43b39e7ca55._SX1080_FMjpg_.jpg', 96.00, 'Focuses on cosmetic dermatology.', 'ACTIVE'),
+(30, 'Dr. Hoang Thi Khanh', '0912345030', '479 Luong Ngoc Quyen, Thai Nguyen', 'hoang.khanh@hospital.com', 6, 'hoangkhanh6', 'password123', 'Skin care specialist.', 'https://t4.ftcdn.net/jpg/06/39/45/45/360_F_639454588_dg0jlrOtHuRFzMdAbJZTdw0XrysWa73y.jpg', 94.00, 'Treats chronic skin conditions.', 'ACTIVE'),
+-- Continue for other departments (7–20)
+-- Gastroenterology (department_id: 7)
+(31, 'Dr. Nguyen Van Linh', '0912345031', '123 Nguyen Trai, Bac Ninh', 'nguyen.linh@hospital.com', 7, 'nguyenlinh7', 'password123', 'Gastroenterology expert.', 'https://i.pinimg.com/736x/7e/91/b7/7e91b721691322422919eec7dc039618.jpg', 115.00, 'Digestive health specialist.', 'ACTIVE'),
+(32, 'Dr. Tran Thi Mai', '0912345032', '178 Tran Phu, Vinh', 'tran.mai@hospital.com', 7, 'tranmai7', 'password123', 'Gastroenterologist.', 'https://t3.ftcdn.net/jpg/05/85/85/10/360_F_585851080_bl0NqsZWOfoNFBS58Uka2D6BjJidRSo2.jpg', 117.00, 'Treats liver diseases.', 'ACTIVE'),
+(33, 'Dr. Le Van Nam', '0912345033', 'Duong Dong, Phu Quoc', 'le.nam@hospital.com', 7, 'lenam7', 'password123', 'Digestive specialist.', 'https://p16-common-sign-sg.tiktokcdn-us.com/tos-alisg-avt-0068/516c3963d7aaca26586ee4e900c304f3~tplv-tiktokx-cropcenter:720:720.jpeg?dr=9640&refresh_token=d9011ea4&x-expires=1752289200&x-signature=9jfz6Hwmo8Pe11n5pEkpAwlxLm4%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=81f88b70&idc=useast8', 113.00, 'Manages gastrointestinal disorders.', 'ACTIVE'),
+(34, 'Dr. Pham Thi Oanh', '0912345034', '4 Pham Ngoc Thach, Da Lat', 'pham.oanh@hospital.com', 7, 'phamoanh7', 'password123', 'Gastroenterology specialist.', 'https://www.shutterstock.com/image-photo/medical-concept-indian-doctor-uniform-600nw-2313987627.jpg', 116.00, 'Focuses on endoscopy.', 'ACTIVE'),
+(35, 'Dr. Hoang Van Phuc', '0912345035', '2 Nguyen Tat Thanh, Buon Ma Thuot', 'hoang.phuc@hospital.com', 7, 'hoangphuc7', 'password123', 'Digestive expert.', 'https://www.medclean.com/wp-content/uploads/2018/03/doctor-in-white-coat-blog.jpg', 114.00, 'Treats ulcers and reflux.', 'ACTIVE'),
+-- Ophthalmology (department_id: 8)
+(36, 'Dr. Nguyen Thi Quynh', '0912345036', '123 Nguyen Thong, Long An', 'nguyen.quynh@hospital.com', 8, 'nguyenquynh8', 'password123', 'Eye specialist.', 'https://t3.ftcdn.net/jpg/04/84/71/16/360_F_484711645_gtucSoRrSYOZ5tljGiYAwFDZkEngSMqR.jpg', 100.00, 'Ophthalmology expert.', 'ACTIVE'),
+(37, 'Dr. Tran Van Sang', '0912345037', '2 Dong Khoi, Bien Hoa', 'tran.sang@hospital.com', 8, 'transang8', 'password123', 'Ophthalmologist.', 'https://clipart-library.com/2024/pics-of-a-doctor/pics-of-a-doctor-4.png', 102.00, 'Treats cataracts.', 'ACTIVE'),
+(38, 'Dr. Le Thi Thanh', '0912345038', '5 Pham Ngoc Thach, Thu Dau Mot', 'le.thanh@hospital.com', 8, 'lethanh8', 'password123', 'Eye care specialist.', 'https://thumbs.dreamstime.com/b/confident-young-adult-indian-female-doctor-gp-wear-white-coat-stethoscope-looking-camera-standing-arms-crossed-medical-191740547.jpg', 98.00, 'Manages glaucoma.', 'ACTIVE'),
+(39, 'Dr. Pham Van Toan', '0912345039', '123 Le Loi, My Tho', 'pham.toan@hospital.com', 8, 'phamtoan8', 'password123', 'Ophthalmology specialist.', 'https://www.massgeneral.org/assets/MGH/images/_global/homepage/curry-william-600x538-v5.png', 101.00, 'Focuses on retinal disorders.', 'ACTIVE'),
+(40, 'Dr. Hoang Thi Uyen', '0912345040', '46 Le Loi, Rach Gia', 'hoang.uyen@hospital.com', 8, 'hoanguyen8', 'password123', 'Eye expert.', 'https://media.istockphoto.com/id/1270790502/photo/medical-concept-of-indian-beautiful-female-doctor-with-note-book.jpg?s=612x612&w=0&k=20&c=5r5tCLSnYHKiPNaHn4hu-e4u_-3eat_8PRdmEQgkmVM=', 99.00, 'Treats vision correction.', 'ACTIVE'),
+-- ENT (department_id: 9)
+(41, 'Dr. Nguyen Van Viet', '0912345041', '123 Giai Phong, Hanoi', 'nguyen.viet@hospital.com', 9, 'nguyenviet9', 'password123', 'ENT specialist.', 'https://i.ebayimg.com/images/g/KeYAAOSwHwpijL5y/s-l1200.jpg', 105.00, 'Ear, nose, throat care.', 'ACTIVE'),
+(42, 'Dr. Tran Thi Xuan', '0912345042', '456 Nguyen Trai, HCMC', 'tran.xuan@hospital.com', 9, 'tranxuan9', 'password123', 'ENT expert.', 'https://www.shutterstock.com/image-photo/medical-concept-indian-beautiful-female-260nw-2145916369.jpg', 107.00, 'Treats sinus disorders.', 'ACTIVE'),
+(43, 'Dr. Le Van Yen', '0912345043', '789 Hai Ba Trung, Da Nang', 'le.yen@hospital.com', 9, 'leyen9', 'password123', 'ENT specialist.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRd1STfBrnZQxvPrcGpvFUqK_ypQLbVNcGLJw&s', 103.00, 'Manages hearing loss.', 'ACTIVE'),
+(44, 'Dr. Pham Thi Anh', '0912345044', '101 Trang Thi, Hanoi', 'pham.anh@hospital.com', 9, 'phamanh9', 'password123', 'ENT care expert.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRJCFFe1AaV_kS0DKl0et-wzv4U8Ea2tz5n8A&s', 106.00, 'Focuses on throat disorders.', 'ACTIVE'),
+(45, 'Dr. Hoang Van Binh', '0912345045', '315 Nguyen Van Cu, Can Tho', 'hoang.binh@hospital.com', 9, 'hoangbinh9', 'password123', 'ENT specialist.', 'https://media.istockphoto.com/id/537282044/photo/dont-hesitate-to-stop-by-without-buying-anything.jpg?s=612x612&w=0&k=20&c=i5oLsIrZ-OKaCVhj2EtBTiKCpK23rnf9OuC_azy-EIo=', 104.00, 'Treats ear infections.', 'ACTIVE'),
+-- Urology (department_id: 10)
+(46, 'Dr. Nguyen Thi Cam', '0912345046', '16 Le Loi, Hue', 'nguyen.cam@hospital.com', 10, 'nguyencam10', 'password123', 'Urology expert.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9v-hOKn3ssBfKMt3v7kR9jN1gO6iEjrtAVw&s', 110.00, 'Urinary health specialist.', 'ACTIVE'),
+(47, 'Dr. Tran Van Dan', '0912345047', '19 Yersin, Nha Trang', 'tran.dan@hospital.com', 10, 'trandan10', 'password123', 'Urologist.', 'https://5.imimg.com/data5/SELLER/Default/2023/6/316680763/CM/BC/UR/84298138/doctor-lab-coat-dress.png', 112.00, 'Treats kidney stones.', 'ACTIVE'),
+(48, 'Dr. Le Thi Em', '0912345048', '123 Le Loi, Vung Tau', 'le.em@hospital.com', 10, 'leem10', 'password123', 'Urinary specialist.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRq1X7zTc1_UX31UTx0HURQtKp6iJz6w6BqRQ&s', 108.00, 'Manages prostate issues.', 'ACTIVE'),
+(49, 'Dr. Pham Van Fu', '0912345049', 'Ha Long, Quang Ninh', 'pham.fu@hospital.com', 10, 'phamfu10', 'password123', 'Urology specialist.', 'https://media.istockphoto.com/id/668598078/photo/cheerful-doctor-posing.jpg?s=612x612&w=0&k=20&c=Vbhk7jNeRYtTbhgTPwTn08Evw_hl_w18OUOaGKaa-0Y=', 111.00, 'Focuses on bladder disorders.', 'ACTIVE'),
+(50, 'Dr. Hoang Thi Giang', '0912345050', '479 Luong Ngoc Quyen, Thai Nguyen', 'hoang.giang@hospital.com', 10, 'hoanggiang10', 'password123', 'Urologist.', 'https://png.pngtree.com/thumb_back/fh260/background/20220401/pngtree-indian-beautifulfemale-doctor-job-lady-female-photo-image_2060393.jpg', 109.00, 'Treats urinary tract infections.', 'ACTIVE');
+-- Endocrinology (department_id: 11)
+-- (51, 'Dr. Nguyen Van Hai', '0912345051', '123 Nguyen Trai, Bac Ninh', 'nguyen.hai@hospital.com', 11, 'nguyenhai11', 'password123', 'Endocrinology expert.', '/images/doctor51.jpg', 100.00, 'Hormonal disorders specialist.', 'ACTIVE'),
+-- (52, 'Dr. Tran Thi Huong', '0912345052', '178 Tran Phu, Vinh', 'tran.huong@hospital.com', 11, 'tranhuong11', 'password123', 'Endocrinologist.', '/images/doctor52.jpg', 102.00, 'Treats diabetes.', 'ACTIVE'),
+-- (53, 'Dr. Le Van Khiem', '0912345053', 'Duong Dong, Phu Quoc', 'le.khiem@hospital.com', 11, 'lekhiem11', 'password123', 'Hormone specialist.', '/images/doctor53.jpg', 98.00, 'Manages thyroid disorders.', 'ACTIVE'),
+-- (54, 'Dr. Pham Thi Lan', '0912345054', '4 Pham Ngoc Thach, Da Lat', 'pham.lan@hospital.com', 11, 'phamlan11', 'password123', 'Endocrinology specialist.', '/images/doctor54.jpg', 101.00, 'Focuses on metabolic disorders.', 'ACTIVE'),
+-- (55, 'Dr. Hoang Van Minh', '0912345055', '2 Nguyen Tat Thanh, Buon Ma Thuot', 'hoang.minh@hospital.com', 11, 'hoangminh11', 'password123', 'Endocrinologist.', '/images/doctor55.jpg', 99.00, 'Treats adrenal disorders.', 'ACTIVE'),
+-- Psychiatry (department_id: 12)
+-- (56, 'Dr. Nguyen Thi Ngoc', '0912345056', '123 Nguyen Thong, Long An', 'nguyen.ngoc@hospital.com', 12, 'nguyenngoc12', 'password123', 'Psychiatry specialist.', '/images/doctor56.jpg', 120.00, 'Mental health care expert.', 'ACTIVE'),
+-- (57, 'Dr. Tran Van Phu', '0912345057', '2 Dong Khoi, Bien Hoa', 'tran.phu@hospital.com', 12, 'tranphu12', 'password123', 'Psychiatrist.', '/images/doctor57.jpg', 122.00, 'Treats depression and anxiety.', 'ACTIVE'),
+-- (58, 'Dr. Le Thi Quynh', '0912345058', '5 Pham Ngoc Thach, Thu Dau Mot', 'le.quynh@hospital.com', 12, 'lequynh12', 'password123', 'Mental health specialist.', '/images/doctor58.jpg', 118.00, 'Manages bipolar disorders.', 'ACTIVE'),
+-- (59, 'Dr. Pham Van Son', '0912345059', '123 Le Loi, My Tho', 'pham.son@hospital.com', 12, 'phamson12', 'password123', 'Psychiatry expert.', '/images/doctor59.jpg', 121.00, 'Focuses on schizophrenia.', 'ACTIVE'),
+-- (60, 'Dr. Hoang Thi Tam', '0912345060', '46 Le Loi, Rach Gia', 'hoang.tam@hospital.com', 12, 'hoangtam12', 'password123', 'Psychiatrist.', '/images/doctor60.jpg', 119.00, 'Treats PTSD and stress disorders.', 'ACTIVE'),
+-- Rheumatology (department_id: 13)
+-- (61, 'Dr. Nguyen Van Thang', '0912345061', '123 Giai Phong, Hanoi', 'nguyen.thang@hospital.com', 13, 'nguyenthang13', 'password123', 'Rheumatology expert.', '/images/doctor61.jpg', 115.00, 'Joint diseases specialist.', 'ACTIVE'),
+-- (62, 'Dr. Tran Thi Uyen', '0912345062', '456 Nguyen Trai, HCMC', 'tran.uyen@hospital.com', 13, 'tranuyen13', 'password123', 'Rheumatologist.', '/images/doctor62.jpg', 117.00, 'Treats rheumatoid arthritis.', 'ACTIVE'),
+-- (63, 'Dr. Le Van Vinh', '0912345063', '789 Hai Ba Trung, Da Nang', 'le.vinh@hospital.com', 13, 'levinh13', 'password123', 'Joint specialist.', '/images/doctor63.jpg', 113.00, 'Manages lupus.', 'ACTIVE'),
+-- (64, 'Dr. Pham Thi Xuan', '0912345064', '101 Trang Thi, Hanoi', 'pham.xuan@hospital.com', 13, 'phamxuan13', 'password123', 'Rheumatology specialist.', '/images/doctor64.jpg', 116.00, 'Focuses on osteoarthritis.', 'ACTIVE'),
+-- (65, 'Dr. Hoang Van Yen', '0912345065', '315 Nguyen Van Cu, Can Tho', 'hoang.yen@hospital.com', 13, 'hoangyen13', 'password123', 'Rheumatologist.', '/images/doctor65.jpg', 114.00, 'Treats autoimmune disorders.', 'ACTIVE'),
+-- Nephrology (department_id: 14)
+-- (66, 'Dr. Nguyen Thi Anh', '0912345066', '16 Le Loi, Hue', 'nguyen.anh@hospital.com', 14, 'nguyenanh14', 'password123', 'Nephrology specialist.', '/images/doctor66.jpg', 110.00, 'Kidney care expert.', 'ACTIVE'),
+-- (67, 'Dr. Tran Van Binh', '0912345067', '19 Yersin, Nha Trang', 'tran.binh@hospital.com', 14, 'tranbinh14', 'password123', 'Nephrologist.', '/images/doctor67.jpg', 112.00, 'Treats kidney failure.', 'ACTIVE'),
+-- (68, 'Dr. Le Thi Cam', '0912345068', '123 Le Loi, Vung Tau', 'le.cam@hospital.com', 14, 'lecam14', 'password123', 'Kidney specialist.', '/images/doctor68.jpg', 108.00, 'Manages dialysis patients.', 'ACTIVE'),
+-- (69, 'Dr. Pham Van Dan', '0912345069', 'Ha Long, Quang Ninh', 'pham.dan@hospital.com', 14, 'phamdan14', 'password123', 'Nephrology expert.', '/images/doctor69.jpg', 111.00, 'Focuses on kidney transplants.', 'ACTIVE'),
+-- (70, 'Dr. Hoang Thi Em', '0912345070', '479 Luong Ngoc Quyen, Thai Nguyen', 'hoang.em@hospital.com', 14, 'hoangem14', 'password123', 'Nephrologist.', '/images/doctor70.jpg', 109.00, 'Treats chronic kidney disease.', 'ACTIVE'),
+-- Pulmonology (department_id: 15)
+-- (71, 'Dr. Nguyen Van Fu', '0912345071', '123 Nguyen Trai, Bac Ninh', 'nguyen.fu@hospital.com', 15, 'nguyenfu15', 'password123', 'Pulmonology expert.', '/images/doctor71.jpg', 105.00, 'Lung care specialist.', 'ACTIVE'),
+-- (72, 'Dr. Tran Thi Giang', '0912345072', '178 Tran Phu, Vinh', 'trangiang@hospital.com', 15, 'trangiang15', 'password123', 'Pulmonologist.', '/images/doctor72.jpg', 107.00, 'Treats asthma.', 'ACTIVE'),
+-- (73, 'Dr. Le Van Hai', '0912345073', 'Duong Dong, Phu Quoc', 'le.hai@hospital.com', 15, 'lehai15', 'password123', 'Lung specialist.', '/images/doctor73.jpg', 103.00, 'Manages COPD.', 'ACTIVE'),
+-- (74, 'Dr. Pham Thi Huong', '0912345074', '4 Pham Ngoc Thach, Da Lat', 'pham.huong@hospital.com', 15, 'phamhuong15', 'password123', 'Pulmonology specialist.', '/images/doctor74.jpg', 106.00, 'Focuses on lung infections.', 'ACTIVE'),
+-- (75, 'Dr. Hoang Van Khiem', '0912345075', '2 Nguyen Tat Thanh, Buon Ma Thuot', 'hoang.khiem@hospital.com', 15, 'hoangkhiem15', 'password123', 'Pulmonologist.', '/images/doctor75.jpg', 104.00, 'Treats pulmonary fibrosis.', 'ACTIVE'),
+-- Hematology (department_id: 16)
+-- (76, 'Dr. Nguyen Thi Lan', '0912345076', '123 Nguyen Thong, Long An', 'nguyen.lan@hospital.com', 16, 'nguyenlan16', 'password123', 'Hematology specialist.', '/images/doctor76.jpg', 100.00, 'Blood disorders expert.', 'ACTIVE'),
+-- (77, 'Dr. Tran Van Minh', '0912345077', '2 Dong Khoi, Bien Hoa', 'tran.minh@hospital.com', 16, 'tranminh16', 'password123', 'Hematologist.', '/images/doctor77.jpg', 102.00, 'Treats anemia.', 'ACTIVE'),
+-- (78, 'Dr. Le Thi Ngoc', '0912345078', '5 Pham Ngoc Thach, Thu Dau Mot', 'le.ngoc@hospital.com', 16, 'lengoc16', 'password123', 'Blood specialist.', '/images/doctor78.jpg', 98.00, 'Manages leukemia.', 'ACTIVE'),
+-- (79, 'Dr. Pham Van Phu', '0912345079', '123 Le Loi, My Tho', 'pham.phu@hospital.com', 16, 'phamphu16', 'password123', 'Hematology expert.', '/images/doctor79.jpg', 101.00, 'Focuses on blood clotting disorders.', 'ACTIVE'),
+-- (80, 'Dr. Hoang Thi Quynh', '0912345080', '46 Le Loi, Rach Gia', 'hoang.quynh@hospital.com', 16, 'hoangquynh16', 'password123', 'Hematologist.', '/images/doctor80.jpg', 99.00, 'Treats lymphoma.', 'ACTIVE'),
+-- Gynecology (department_id: 17)
+-- (81, 'Dr. Nguyen Van Son', '0912345081', '123 Giai Phong, Hanoi', 'nguyen.son@hospital.com', 17, 'nguyenson17', 'password123', 'Gynecology expert.', '/images/doctor81.jpg', 120.00, 'Women’s health specialist.', 'ACTIVE'),
+-- (82, 'Dr. Tran Thi Tam', '0912345082', '456 Nguyen Trai, HCMC', 'tran.tam@hospital.com', 17, 'trantam17', 'password123', 'Gynecologist.', '/images/doctor82.jpg', 122.00, 'Treats reproductive disorders.', 'ACTIVE'),
+-- (83, 'Dr. Le Van Thang', '0912345083', '789 Hai Ba Trung, Da Nang', 'le.thang@hospital.com', 17, 'lethang17', 'password123', 'Women’s health expert.', '/images/doctor83.jpg', 118.00, 'Manages pregnancy care.', 'ACTIVE'),
+-- (84, 'Dr. Pham Thi Uyen', '0912345084', '101 Trang Thi, Hanoi', 'pham.uyen@hospital.com', 17, 'phamuyen17', 'password123', 'Gynecology specialist.', '/images/doctor84.jpg', 121.00, 'Focuses on infertility.', 'ACTIVE'),
+-- (85, 'Dr. Hoang Van Vinh', '0912345085', '315 Nguyen Van Cu, Can Tho', 'hoang.vinh@hospital.com', 17, 'hoangvinh17', 'password123', 'Gynecologist.', '/images/doctor85.jpg', 119.00, 'Treats menstrual disorders.', 'ACTIVE'),
+-- Anesthesiology (department_id: 18)
+-- (86, 'Dr. Nguyen Thi Xuan', '0912345086', '16 Le Loi, Hue', 'nguyen.xuan@hospital.com', 18, 'nguyenxuan18', 'password123', 'Anesthesiology expert.', '/images/doctor86.jpg', 115.00, 'Pain management specialist.', 'ACTIVE'),
+-- (87, 'Dr. Tran Van Yen', '0912345087', '19 Yersin, Nha Trang', 'tran.yen@hospital.com', 18, 'tranyen18', 'password123', 'Anesthesiologist.', '/images/doctor87.jpg', 117.00, 'Manages surgical anesthesia.', 'ACTIVE'),
+-- (88, 'Dr. Le Thi Anh', '0912345088', '123 Le Loi, Vung Tau', 'le.anh@hospital.com', 18, 'leanh18', 'password123', 'Pain specialist.', '/images/doctor88.jpg', 113.00, 'Focuses on chronic pain.', 'ACTIVE'),
+-- (89, 'Dr. Pham Van Binh', '0912345089', 'Ha Long, Quang Ninh', 'pham.binh@hospital.com', 18, 'phambinh18', 'password123', 'Anesthesiology specialist.', '/images/doctor89.jpg', 116.00, 'Manages postoperative pain.', 'ACTIVE'),
+-- (90, 'Dr. Hoang Thi Cam', '0912345090', '479 Luong Ngoc Quyen, Thai Nguyen', 'hoang.cam@hospital.com', 18, 'hoangcam18', 'password123', 'Anesthesiologist.', '/images/doctor90.jpg', 114.00, 'Treats acute pain conditions.', 'ACTIVE'),
+-- Radiology (department_id: 19)
+-- (91, 'Dr. Nguyen Van Dan', '0912345091', '123 Nguyen Trai, Bac Ninh', 'nguyen.dan@hospital.com', 19, 'nguyendan19', 'password123', 'Radiology expert.', '/images/doctor91.jpg', 110.00, 'Medical imaging specialist.', 'ACTIVE'),
+-- (92, 'Dr. Tran Thi Em', '0912345092', '178 Tran Phu, Vinh', 'tran.em@hospital.com', 19, 'tranem19', 'password123', 'Radiologist.', '/images/doctor92.jpg', 112.00, 'Focuses on MRI scans.', 'ACTIVE'),
+-- (93, 'Dr. Le Van Fu', '0912345093', 'Duong Dong, Phu Quoc', 'le.fu@hospital.com', 19, 'lefu19', 'password123', 'Imaging specialist.', '/images/doctor93.jpg', 108.00, 'Manages CT scans.', 'ACTIVE'),
+-- (94, 'Dr. Pham Thi Giang', '0912345094', '4 Pham Ngoc Thach, Da Lat', 'pham.giang@hospital.com', 19, 'phamgiang19', 'password123', 'Radiology specialist.', '/images/doctor94.jpg', 111.00, 'Focuses on X-ray diagnostics.', 'ACTIVE'),
+-- (95, 'Dr. Hoang Van Hai', '0912345095', '2 Nguyen Tat Thanh, Buon Ma Thuot', 'hoang.hai@hospital.com', 19, 'hoanghai19', 'password123', 'Radiologist.', '/images/doctor95.jpg', 109.00, 'Treats ultrasound diagnostics.', 'ACTIVE'),
+-- General Surgery (department_id: 20)
+-- (96, 'Dr. Nguyen Thi Huong', '0912345096', '123 Nguyen Thong, Long An', 'nguyen.huong@hospital.com', 20, 'nguyenhuong20', 'password123', 'Surgical expert.', '/images/doctor96.jpg', 125.00, 'General surgery specialist.', 'ACTIVE'),
+-- (97, 'Dr. Tran Van Khiem', '0912345097', '2 Dong Khoi, Bien Hoa', 'tran.khiem@hospital.com', 20, 'trankhiem20', 'password123', 'Surgeon.', '/images/doctor97.jpg', 127.00, 'Focuses on abdominal surgery.', 'ACTIVE'),
+-- (98, 'Dr. Le Thi Lan', '0912345098', '5 Pham Ngoc Thach, Thu Dau Mot', 'le.lan@hospital.com', 20, 'lelan20', 'password123', 'Surgery specialist.', '/images/doctor98.jpg', 123.00, 'Manages minimally invasive surgery.', 'ACTIVE'),
+-- (99, 'Dr. Pham Van Minh', '0912345099', '123 Le Loi, My Tho', 'pham.minh@hospital.com', 20, 'phamminh20', 'password123', 'General surgeon.', '/images/doctor99.jpg', 126.00, 'Treats trauma surgery.', 'ACTIVE'),
+-- (100, 'Dr. Hoang Thi Ngoc', '0912345100', '46 Le Loi, Rach Gia', 'hoang.ngoc@hospital.com', 20, 'hoangngoc20', 'password123', 'Surgical expert.', '/images/doctor100.jpg', 124.00, 'Focuses on laparoscopic surgery.', 'ACTIVE');
+-- Insert data into patients
+INSERT INTO patients (patient_id, patient_name, patient_dob, patient_email, patient_phone, patient_address, patient_password, patient_username, patient_gender, patient_code, patient_img) VALUES
+(1, 'Nguyen Van An', '1985-03-15 00:00:00', 'nguyen.an@patient.com', '0981234001', '123 Tran Hung Dao, Hanoi', 'password123', 'nguyenan1', 'MALE', 'PAT001', '/images/patient1.jpg'),
+(2, 'Tran Thi Bich', '1990-07-22 00:00:00', 'tran.bich@patient.com', '0981234002', '456 Le Loi, HCMC', 'password123', 'tranbich2', 'FEMALE', 'PAT002', '/images/patient2.jpg'),
+(3, 'Le Van Cuong', '1978-11-10 00:00:00', 'le.cuong@patient.com', '0981234003', '789 Hai Ba Trung, Da Nang', 'password123', 'lecuong3', 'MALE', 'PAT003', '/images/patient3.jpg'),
+(4, 'Pham Thi Dung', '1995-04-18 00:00:00', 'pham.dung@patient.com', '0981234004', '101 Nguyen Trai, Hanoi', 'password123', 'phamdung4', 'FEMALE', 'PAT004', '/images/patient4.jpg'),
+(5, 'Hoang Van Em', '1982-09-05 00:00:00', 'hoang.em@patient.com', '0981234005', '315 Nguyen Van Cu, Can Tho', 'password123', 'hoangem5', 'MALE', 'PAT005', '/images/patient5.jpg'),
+(6, 'Nguyen Thi Phuong', '1988-12-25 00:00:00', 'nguyen.phuong@patient.com', '0981234006', '16 Le Loi, Hue', 'password123', 'nguyenphuong6', 'FEMALE', 'PAT006', '/images/patient6.jpg'),
+(7, 'Tran Van Giang', '1976-06-30 00:00:00', 'tran.giang@patient.com', '0981234007', '19 Yersin, Nha Trang', 'password123', 'trangiang7', 'MALE', 'PAT007', '/images/patient7.jpg'),
+(8, 'Le Thi Hoa', '1993-02-14 00:00:00', 'le.hoa@patient.com', '0981234008', '123 Le Loi, Vung Tau', 'password123', 'lehoa8', 'FEMALE', 'PAT008', '/images/patient8.jpg'),
+(9, 'Pham Van Hung', '1980-08-08 00:00:00', 'pham.hung@patient.com', '0981234009', '456 Ha Long, Quang Ninh', 'password123', 'phamhung9', 'MALE', 'PAT009', '/images/patient9.jpg'),
+(10, 'Hoang Thi Kim', '1997-05-20 00:00:00', 'hoang.kim@patient.com', '0981234010', '789 Luong Ngoc Quyen, Thai Nguyen', 'password123', 'hoangkim10', 'FEMALE', 'PAT010', '/images/patient10.jpg');
+-- Insert data into staffs
+INSERT INTO staffs (staff_id, staff_name, staff_phone, staff_address, staff_type, staff_status, staff_username, staff_password, staff_email) VALUES
+(1, 'Nguyen Thi An', '0901234001', '123 Tran Hung Dao, Hanoi', 'RECEPTIONIST', 'ACTIVE', 'nguyenan_rec1', 'password123', 'nguyen.an@hospital.com'),
+(2, 'Tran Van Binh', '0901234002', '456 Le Loi, HCMC', 'NURSE', 'ACTIVE', 'tranbinh_nur2', 'password123', 'tran.binh@hospital.com'),
+(3, 'Le Thi Cam', '0901234003', '789 Hai Ba Trung, Da Nang', 'RECEPTIONIST', 'ACTIVE', 'lecam_rec3', 'password123', 'le.cam@hospital.com'),
+(4, 'Pham Van Dung', '0901234004', '101 Nguyen Trai, Hanoi', 'NURSE', 'ACTIVE', 'phamdung_nur4', 'password123', 'pham.dung@hospital.com'),
+(5, 'Hoang Thi Em', '0901234005', '315 Nguyen Van Cu, Can Tho', 'RECEPTIONIST', 'ACTIVE', 'hoangem_rec5', 'password123', 'hoang.em@hospital.com'),
+(6, 'Nguyen Van Fu', '0901234006', '16 Le Loi, Hue', 'NURSE', 'ACTIVE', 'nguyenfu_nur6', 'password123', 'nguyen.fu@hospital.com'),
+(7, 'Tran Thi Giang', '0901234007', '19 Yersin, Nha Trang', 'RECEPTIONIST', 'ACTIVE', 'trangiang_rec7', 'password123', 'tran.giang@hospital.com'),
+(8, 'Le Van Hung', '0901234008', '123 Le Loi, Vung Tau', 'NURSE', 'ACTIVE', 'lehung_nur8', 'password123', 'le.hung@hospital.com'),
+(9, 'Pham Thi Kim', '0901234009', '456 Ha Long, Quang Ninh', 'RECEPTIONIST', 'ACTIVE', 'phamkim_rec9', 'password123', 'pham.kim@hospital.com'),
+(10, 'Hoang Van Linh', '0901234010', '789 Luong Ngoc Quyen, Thai Nguyen', 'NURSE', 'ACTIVE', 'hoanglinh_nur10', 'password123', 'hoang.linh@hospital.com');
+
+-- Insert data into appointments
+INSERT INTO appointments (appointment_id, patient_id, doctor_id, appointment_date, medical_day, slot, status, payment_name, price, staff_id) VALUES
+-- June 2025 (COMPLETED)
+(1, 1, 1, '2025-06-01', '2025-06-01', 1, 'COMPLETED', 'CREDIT_CARD', 100.00, 1), -- Cardiology, Nguyen Van An, Dr. Nguyen Van An
+(2, 2, 6, '2025-06-01', '2025-06-01', 2, 'COMPLETED', 'CASH', 120.00, 3), -- Neurology, Tran Thi Bich, Dr. Nguyen Thi Phuong
+(3, 3, 11, '2025-06-02', '2025-06-02', 3, 'COMPLETED', 'CREDIT_CARD', 110.00, 5), -- Orthopedics, Le Van Cuong, Dr. Nguyen Van Khanh
+(4, 4, 16, '2025-06-02', '2025-06-02', 4, 'COMPLETED', 'CASH', 90.00, 7), -- Pediatrics, Pham Thi Dung, Dr. Nguyen Thi Quy
+(5, 5, 21, '2025-06-03', '2025-06-03', 5, 'COMPLETED', 'CREDIT_CARD', 130.00, 9), -- Oncology, Hoang Van Em, Dr. Nguyen Van Xuan
+(6, 6, 26, '2025-06-03', '2025-06-03', 6, 'COMPLETED', 'CASH', 95.00, 1), -- Dermatology, Nguyen Thi Phuong, Dr. Nguyen Thi Dieu
+(7, 7, 31, '2025-06-04', '2025-06-04', 7, 'COMPLETED', 'CREDIT_CARD', 115.00, 3), -- Gastroenterology, Tran Van Giang, Dr. Nguyen Van Linh
+(8, 8, 36, '2025-06-04', '2025-06-04', 8, 'COMPLETED', 'CASH', 100.00, 5), -- Ophthalmology, Le Thi Hoa, Dr. Nguyen Thi Quynh
+(9, 9, 41, '2025-06-05', '2025-06-05', 9, 'COMPLETED', 'CREDIT_CARD', 105.00, 7), -- ENT, Pham Van Hung, Dr. Nguyen Van Viet
+(10, 10, 46, '2025-06-05', '2025-06-05', 10, 'COMPLETED', 'CASH', 110.00, 9), -- Urology, Hoang Thi Kim, Dr. Nguyen Thi Cam
+(11, 1, 51, '2025-06-06', '2025-06-06', 1, 'COMPLETED', 'CREDIT_CARD', 100.00, 1); -- Endocrinology, Nguyen Van An, Dr. Nguyen Van Hai
+
+SELECT * FROM medicalrecords WHERE doctor_id = 1;
+
+-- Insert data into medicalrecords
+-- Thêm dữ liệu mẫu vào bảng medicalrecords
+INSERT INTO medicalrecords (patient_id, symptoms, diagnosis, treatment, prescription, follow_up_date, doctor_id, severity, image) VALUES
+(1, 'Đau ngực', 'Đau thắt ngực', 'Nghỉ ngơi, thuốc', 'Nitroglycerin', '2025-06-10', 1, 5.0, '/images/record1.jpg'),
+(2, 'Co giật', 'Động kinh', 'Thuốc chống co giật', 'Levetiracetam', '2025-06-11', 2, 7.0, '/images/record2.jpg'),
+(3, 'Đau lưng', 'Thoát vị đĩa đệm', 'Vật lý trị liệu, giảm đau', 'Ibuprofen', '2025-06-12', 3, 5.5, '/images/record3.jpg'),
+(4, 'Ho kéo dài', 'Viêm phế quản', 'Kháng sinh, thuốc giảm ho', 'Azithromycin', '2025-06-13', 4, 4.5, '/images/record4.jpg'),
+(5, 'Buồn nôn, nôn mửa', 'Tác dụng phụ hóa trị', 'Thuốc chống nôn', 'Ondansetron', '2025-06-14', 5, 6.0, '/images/record5.jpg'),
+(6, 'Mụn trứng cá', 'Mụn trứng cá nặng', 'Thuốc bôi và uống', 'Isotretinoin', '2025-06-15', 6, 3.5, '/images/record6.jpg'),
+(7, 'Ợ nóng', 'Trào ngược dạ dày', 'Thay đổi lối sống, thuốc', 'Pantoprazole', '2025-06-16', 7, 4.0, '/images/record7.jpg'),
+(8, 'Mắt đỏ', 'Viêm kết mạc', 'Thuốc nhỏ mắt kháng sinh', 'Erythromycin', '2025-06-17', 8, 3.0, '/images/record8.jpg'),
+(9, 'Mất thính lực', 'Viêm tai giữa', 'Kháng sinh, thuốc nhỏ tai', 'Amoxicillin', '2025-06-18', 9, 4.5, '/images/record9.jpg'),
+(10, 'Tiểu máu', 'Sỏi thận', 'Giảm đau, tăng cường nước', 'Tamsulosin', '2025-06-19', 10, 6.0, '/images/record10.jpg');
+
