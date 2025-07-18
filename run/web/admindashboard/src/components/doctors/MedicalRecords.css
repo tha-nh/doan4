@@ -356,7 +356,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.6rem 1.2rem;
-    background: linear-gradient(145deg, #004B91, #004B91);
+    background:  #004B91;
     color: white;
     border: none;
     font-weight: 600;
@@ -368,8 +368,8 @@
 }
 
 .view-details-btn:hover {
-    background: white;
-    color: #004B91;
+    background: #0060b8;
+    color: #fff;
 }
 
 .btn-icon {

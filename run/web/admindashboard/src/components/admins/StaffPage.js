@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "./Sidebar"; // Đảm bảo đường dẫn đúng đến component Sidebar
-import FeedbackListWithReply from "./FeedbackListWithReply"; // Import FeedbackListWithReply component
-import "./StaffPage.css"; // Đảm bảo đường dẫn đúng đến tệp CSS của bạn
+import Sidebar from "./Sidebar";
+import FeedbackListWithReply from "./FeedbackListWithReply";
+import "./StaffPage.css";
 
 const StaffPage = () => {
   const [staff, setStaff] = useState([]);
@@ -118,8 +118,6 @@ const StaffPage = () => {
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Address</th>
-                <th>Username</th>
-                <th>Password</th>
                 <th>Working Status</th>
               </tr>
             </thead>
@@ -132,8 +130,6 @@ const StaffPage = () => {
                     <td>{staffMember.staff_email}</td>
                     <td>{staffMember.staff_phone}</td>
                     <td>{staffMember.staff_address}</td>
-                    <td>{staffMember.staff_username}</td>
-                    <td>{staffMember.staff_password}</td>
                     <td>
                       <select
                         value={staffMember.staff_status}
@@ -145,17 +141,15 @@ const StaffPage = () => {
                         }
                         className="staff-select"
                       >
-                        <option value="Working">Working</option>
-                        <option value="Inactive">Inactive</option>
-                        <option value="On Leave">On Leave</option>
-                        <option value="Stopped">Stopped</option>
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="INACTIVE">INACTIVE</option>
                       </select>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} align="center">
+                  <td colSpan={6} align="center">
                     No staff found
                   </td>
                 </tr>

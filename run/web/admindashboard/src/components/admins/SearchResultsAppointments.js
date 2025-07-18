@@ -33,7 +33,7 @@ const SearchResultsAppointments = () => {
             7: '03:00 PM - 04:00 PM',
             8: '04:00 PM - 05:00 PM'
         };
-        return slotMapping[slot] || 'N/A';
+        return slotMapping[slot] || '';
     };
 
     useEffect(() => {

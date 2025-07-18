@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'PatientMedicalListScreen.dart';
+
 class AppointmentDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> appointment;
 
@@ -300,51 +302,107 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
   }
 
   Widget _buildPatientHeader(String patientName) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cardColor,
+    final patient = (_appointmentDetails ?? widget.appointment)['patient'];
+    final patientImg = patient != null && patient.isNotEmpty ? patient[0]['patient_img'] : null;
+    final patientId = patient != null && patient.isNotEmpty ? patient[0]['patient_id'] : null;
+
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+        onTap: () {
+          if (patientId != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PatientMedicalListScreen(
+                  patientId: patientId,
+                  patientName: patientName,
+                ),
+              ),
+            );
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: primaryColor.withOpacity(0.2),
-            child: const Icon(
-              Icons.person,
-              size: 40,
-              color: primaryColor,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  patientName,
-                  style: GoogleFonts.lora(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: textColor,
+          child: Row(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryColor.withOpacity(0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: patientImg != null
+                      ? Image.network(
+                    patientImg,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: primaryColor.withOpacity(0.2),
+                      child: const Icon(Icons.person, color: primaryColor, size: 40),
+                    ),
+                  )
+                      : Container(
+                    color: primaryColor.withOpacity(0.2),
+                    child: const Icon(Icons.person, color: primaryColor, size: 40),
                   ),
                 ),
-
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      patientName,
+                      style: GoogleFonts.lora(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: textColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Tap to view medical records',
+                      style: GoogleFonts.lora(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+            ],
           ),
-        ],
+        ),
       ),
     );
+
+
   }
+
 
   Widget _buildDoctorHeader(String doctorName) {
     return Container(
@@ -468,9 +526,9 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
         if (!hasTimePassed)
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: _isUpdating ? null : () => _updateStatus('CANCELLED'),
+              onPressed: _isUpdating ? null : () => _updateStatus('MISSED'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: errorColor,
+                backgroundColor: Colors.orange,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 shape: RoundedRectangleBorder(
@@ -487,9 +545,9 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> wit
                   strokeWidth: 2,
                 ),
               )
-                  : const Icon(Icons.cancel, size: 20),
+                  : const Icon(	Icons.error_outline, size: 20),
               label: Text(
-                'CANCELLED',
+                'MISSED',
                 style: GoogleFonts.lora(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,

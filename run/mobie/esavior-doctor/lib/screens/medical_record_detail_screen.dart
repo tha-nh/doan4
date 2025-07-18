@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
 class MedicalRecordDetailScreen extends StatefulWidget {
@@ -14,6 +17,7 @@ class MedicalRecordDetailScreen extends StatefulWidget {
 class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
+  List<dynamic> _departments = [];
 
   // Color palette
   static const Color primaryColor = Color(0xFF0288D1);
@@ -38,6 +42,21 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
       curve: Curves.easeOutQuad,
     ));
     _animationController.forward();
+
+    _fetchDepartments();
+  }
+
+  Future<void> _fetchDepartments() async {
+    try {
+      final response = await http.get(Uri.parse('http://10.0.2.2:8081/api/v1/departments/list'));
+      if (response.statusCode == 200) {
+        setState(() {
+          _departments = jsonDecode(response.body);
+        });
+      }
+    } catch (e) {
+      print('Failed to fetch departments: $e');
+    }
   }
 
   @override
@@ -84,6 +103,24 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
     );
   }
 
+  String _getDoctorName() {
+    final doctor = widget.record['doctors']?[0];
+    return doctor?['doctor_name'] ?? 'Unknown';
+  }
+
+  String _getDepartmentName() {
+    final doctor = widget.record['doctors']?[0];
+    final depId = doctor?['department_id'];
+    if (depId == null) return 'Unknown';
+
+    final dept = _departments.firstWhere(
+          (d) => d['department_id'] == depId,
+      orElse: () => null,
+    );
+    return dept != null ? dept['department_name'] ?? 'Unknown' : 'Unknown';
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final imageUrl = widget.record['image'];
@@ -114,7 +151,15 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _buildSectionHeader('Patient Information'),
+                const SizedBox(height: 12),
                 _buildPatientHeader(),
+
+                const SizedBox(height: 20),
+                _buildSectionHeader('Doctor Information'),
+                const SizedBox(height: 12),
+                _buildDoctorCard(), // 👈 thêm widget mới
+
 
                 if (imageUrl != null) ...[
                   const SizedBox(height: 20),
@@ -126,6 +171,7 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
                 _buildSectionHeader('Medical Details'),
                 const SizedBox(height: 12),
                 _buildDetailCard([
+
                   _buildDetailRow('Symptoms', widget.record['symptoms'] ?? 'Not yet'),
                   _buildDetailRow('Diagnosis', widget.record['diagnosis'] ?? 'Not yet'),
                   _buildDetailRow('Treatment', widget.record['treatment'] ?? 'Not yet'),
@@ -139,6 +185,8 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
       ),
     );
   }
+
+
 
   Widget _buildPatientHeader() {
     // Access patient data from the nested 'patients' list
@@ -198,6 +246,48 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen> w
       ),
     );
   }
+
+  Widget _buildDoctorCard() {
+    final doctorName = _getDoctorName();
+    final departmentName = _getDepartmentName();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            ' $doctorName',
+            style: GoogleFonts.lora(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Department: $departmentName',
+            style: GoogleFonts.lora(
+              fontSize: 15,
+              color: Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   Widget _buildSectionHeader(String title) {
     return Container(

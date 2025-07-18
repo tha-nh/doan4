@@ -3,23 +3,19 @@ import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import FeedbackListWithReply from './FeedbackListWithReply';
+import AppointmentsChart from './AppointmentsChart';
+import AppointmentStatusPieChart from './AppointmentStatusPieChart';
 import './DoctorDetailPage.css';
 
 const DoctorDetailPage = () => {
     const { doctorId } = useParams();
     const [doctor, setDoctor] = useState(null);
-    const [todayAppointments, setTodayAppointments] = useState([]);
-    const [monthlyAppointments, setMonthlyAppointments] = useState([]);
+    const [weekAppointments, setWeekAppointments] = useState([]);
+    const [lastMonthAppointments, setLastMonthAppointments] = useState([]);
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [departments, setDepartments] = useState([]);
 
-    const [stats, setStats] = useState({
-        totalToday: 0,
-        totalMonthly: 0,
-        completedToday: 0,
-        pendingToday: 0
-    });
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -31,8 +27,8 @@ const DoctorDetailPage = () => {
         try {
             await Promise.all([
                 fetchDoctorDetails(),
-                fetchTodayAppointments(),
-                fetchMonthlyAppointments(),
+                fetchWeekAppointments(),
+                fetchLastMonthAppointments(),
                 fetchDepartments()
             ]);
         } catch (error) {
@@ -51,7 +47,6 @@ const DoctorDetailPage = () => {
         }
     };
 
-
     const fetchDoctorDetails = async () => {
         try {
             const doctorResponse = await axios.get(`http://localhost:8081/api/v1/doctors/${doctorId}`);
@@ -61,51 +56,49 @@ const DoctorDetailPage = () => {
         }
     };
 
-    const fetchTodayAppointments = async () => {
+    const fetchWeekAppointments = async () => {
         try {
-            const today = new Date().toISOString().split('T')[0];
+            const today = new Date(); // Use current date
+            const startDate = today.toISOString().split('T')[0]; // e.g., 2025-07-16
+            const endDate = new Date(today.setDate(today.getDate() + 7)).toISOString().split('T')[0]; // e.g., 2025-07-22
             const response = await axios.get(`http://localhost:8081/api/v1/appointments/search`, {
                 params: {
                     doctor_id: doctorId,
-                    medical_day: today,
+                    start_date: startDate,
+                    end_date: endDate,
                 }
             });
-            setTodayAppointments(response.data);
-
-            // Calculate today's stats
-            const completed = response.data.filter(apt => apt.status === 'completed').length;
-            const pending = response.data.filter(apt => apt.status === 'pending').length;
-
-            setStats(prev => ({
-                ...prev,
-                totalToday: response.data.length,
-                completedToday: completed,
-                pendingToday: pending
-            }));
+            // Additional client-side filtering to ensure correct date range
+            const filteredAppointments = response.data.filter(appointment => {
+                const appointmentDate = new Date(appointment.medical_day);
+                return appointmentDate >= new Date(startDate) && appointmentDate <= new Date(endDate);
+            });
+            setWeekAppointments(filteredAppointments);
         } catch (error) {
-            console.error("Error fetching today's appointments", error);
+            console.error("Error fetching week's appointments", error);
         }
     };
 
-    const fetchMonthlyAppointments = async () => {
+    const fetchLastMonthAppointments = async () => {
         try {
-            const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
-            const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0];
+            const today = new Date(); // Use current date
+            const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString().split('T')[0]; // e.g., 2025-06-01
+            const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0).toISOString().split('T')[0]; // e.g., 2025-06-30
             const response = await axios.get(`http://localhost:8081/api/v1/appointments/search`, {
                 params: {
                     doctor_id: doctorId,
-                    start_date: startOfMonth,
-                    end_date: endOfMonth,
+                    start_date: startOfLastMonth,
+                    end_date: endOfLastMonth,
                 }
             });
-            setMonthlyAppointments(response.data);
-
-            setStats(prev => ({
-                ...prev,
-                totalMonthly: response.data.length
-            }));
+            // Additional client-side filtering to ensure only last month's appointments
+            const filteredAppointments = response.data.filter(appointment => {
+                const appointmentDate = new Date(appointment.medical_day);
+                return appointmentDate >= new Date(startOfLastMonth) && appointmentDate <= new Date(endOfLastMonth);
+            });
+            setLastMonthAppointments(filteredAppointments);
         } catch (error) {
-            console.error('Error fetching monthly appointments', error);
+            console.error('Error fetching last month appointments', error);
         }
     };
 
@@ -113,7 +106,6 @@ const DoctorDetailPage = () => {
         const dept = departments.find(d => d.department_id === id);
         return dept ? dept.department_name : 'Unknown Department';
     };
-
 
     const handleBack = () => {
         navigate('/doctors');
@@ -126,6 +118,10 @@ const DoctorDetailPage = () => {
     const handleCloseFeedbackModal = () => {
         setIsFeedbackModalOpen(false);
     };
+        const handleAppointmentClick = (appointmentId) => {
+        navigate(`/appointments/${appointmentId}`);
+    };
+
 
     const getTimeFromSlot = (slot) => {
         const slotToTime = {
@@ -143,16 +139,17 @@ const DoctorDetailPage = () => {
 
     const getStatusClass = (status) => {
         switch (status?.toLowerCase()) {
-            case 'confirmed':
-                return 'status-v123 confirmed-v123';
+            case 'missed':
+                return 'status-v2025 MISSED-v2025';
             case 'pending':
-                return 'status-v123 pending-v123';
+                return 'status-v2025 PENDING-v2025';
             case 'cancelled':
-                return 'status-v123 cancelled-v123';
+            case 'canceled': // Handle both spellings
+                return 'status-v2025 CANCELLED-v2025';
             case 'completed':
-                return 'status-v123 completed-v123';
+                return 'status-v2025 COMPLETED-v2025';
             default:
-                return 'status-v123';
+                return 'status-v2025';
         }
     };
 
@@ -166,19 +163,19 @@ const DoctorDetailPage = () => {
     };
 
     const renderEmptyState = (message) => (
-        <div className="empty-state-v123">
-            <div className="empty-state-icon-v123">
+        <div className="empty-state-v2025">
+            <div className="empty-state-icon-v2025">
                 <svg fill="currentColor" viewBox="0 0 24 24">
                     <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
                 </svg>
             </div>
-            <div className="empty-state-text-v123">{message}</div>
+            <div className="empty-state-text-v2025">{message}</div>
         </div>
     );
 
     if (loading) {
         return (
-            <div className="doctor-detail-page-v123">
+            <div className="doctor-detail-page-v2025">
                 <Sidebar
                     onInboxClick={handleOpenFeedbackModal}
                     handleOpenDoctorsPage={() => navigate('/doctors')}
@@ -186,9 +183,9 @@ const DoctorDetailPage = () => {
                     handleOpenAppointmentsPage={() => navigate('/appointments')}
                     handleOpenStaffPage={() => navigate('/staff')}
                 />
-                <div className="content-v123">
-                    <div className="loading-spinner-v123">
-                        <div className="spinner-v123"></div>
+                <div className="content-v2025">
+                    <div className="loading-spinner-v2025">
+                        <div className="spinner-v2025"></div>
                     </div>
                 </div>
             </div>
@@ -196,7 +193,7 @@ const DoctorDetailPage = () => {
     }
 
     return (
-        <div className="doctor-detail-page-v123">
+        <div className="doctor-detail-page-v2025">
             <Sidebar
                 onInboxClick={handleOpenFeedbackModal}
                 handleOpenDoctorsPage={() => navigate('/doctors')}
@@ -204,75 +201,71 @@ const DoctorDetailPage = () => {
                 handleOpenAppointmentsPage={() => navigate('/appointments')}
                 handleOpenStaffPage={() => navigate('/staff')}
             />
-            <div className="content-v123">
-                <div className="header-v123">
-                    <h22>Doctor Details</h22>
-                    <button className="back-button-v123" onClick={handleBack}>
-                        ← Back to Doctors List
+            <div className="content-v2025">
+                <div className="header-v2025">
+                    <h2>Doctor Details</h2>
+                    <button className="back-button-v2025" onClick={handleBack}>
+                        Doctors List
                     </button>
                 </div>
 
                 {doctor && (
-                    <div className="doctor-info-v123">
-                        <div className="doctor-info-header-v123">
-
-                                <img src={doctor.doctor_image}
-                                     className="doctor-avatar-v123"
-                                     alt="doctor"
-                                />
-
-                            <div className="doctor-name-section-v123">
+                    <div className="doctor-info-v2025">
+                        <div className="doctor-info-header-v2025">
+                            <img src={doctor.doctor_image}
+                                 className="doctor-avatar-v2025"
+                                 alt="doctor"
+                            />
+                            <div className="doctor-name-section-v2025">
                                 <h5>{doctor.doctor_name}</h5>
-                                <div
-                                    className="doctor-specialty-v123">{getDepartmentNameById(doctor.department_id)}</div>
-
+                                <div className="doctor-specialty-v2025">{getDepartmentNameById(doctor.department_id)}</div>
                             </div>
                         </div>
-                        <div className="doctor-details-grid-v123">
-                            <div className="detail-item-v123">
-                                <div className="detail-icon-v123">
+                        <div className="doctor-details-grid-v2025">
+                            <div className="detail-item-v2025">
+                                <div className="detail-icon-v2025">
                                     <svg fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
                                     </svg>
                                 </div>
-                                <div className="detail-content-v123">
-                                    <div className="detail-label-v123">Email</div>
-                                    <div className="detail-value-v123">{doctor.doctor_email}</div>
+                                <div className="detail-content-v2025">
+                                    <div className="detail-label-v2025">Email</div>
+                                    <div className="detail-value-v2025">{doctor.doctor_email}</div>
                                 </div>
                             </div>
-                            <div className="detail-item-v123">
-                                <div className="detail-icon-v123">
+                            <div className="detail-item-v2025">
+                                <div className="detail-icon-v2025">
                                     <svg fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
                                     </svg>
                                 </div>
-                                <div className="detail-content-v123">
-                                    <div className="detail-label-v123">Phone</div>
-                                    <div className="detail-value-v123">{doctor.doctor_phone}</div>
+                                <div className="detail-content-v2025">
+                                    <div className="detail-label-v2025">Phone</div>
+                                    <div className="detail-value-v2025">{doctor.doctor_phone}</div>
                                 </div>
                             </div>
-                            <div className="detail-item-v123">
-                                <div className="detail-icon-v123">
+                            <div className="detail-item-v2025">
+                                <div className="detail-icon-v2025">
                                     <svg fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                                     </svg>
                                 </div>
-                                <div className="detail-content-v123">
-                                    <div className="detail-label-v123">Address</div>
-                                    <div className="detail-value-v123">{doctor.doctor_address}</div>
+                                <div className="detail-content-v2025">
+                                    <div className="detail-label-v2025">Address</div>
+                                    <div className="detail-value-v2025">{doctor.doctor_address}</div>
                                 </div>
                             </div>
-                            <div className="detail-item-v123">
-                                <div className="detail-icon-v123">
+                            <div className="detail-item-v2025">
+                                <div className="detail-icon-v2025">
                                     <svg fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
                                 </div>
-                                <div className="detail-content-v123">
-                                    <div className="detail-label-v123">Status</div>
-                                    <div className="detail-value-v123">
-                                        <span className={`working-status-v123 ${doctor.working_status === 'active' ? 'active-v123' : 'inactive-v123'}`}>
-                                            {doctor.working_status === 'active' ? 'Active' : 'Inactive'}
+                                <div className="detail-content-v2025">
+                                    <div className="detail-label-v2025">Price</div>
+                                    <div className="detail-value-v2025">
+                                        <span className="working-status-v2025">
+                                            {doctor.doctor_price ? `$ ${doctor.doctor_price} ` : ''}
                                         </span>
                                     </div>
                                 </div>
@@ -281,79 +274,49 @@ const DoctorDetailPage = () => {
                     </div>
                 )}
 
-                <div className="stats-overview-v123">
-                    <div className="stat-card-v123">
-                        <div className="stat-value-v123">{stats.totalToday}</div>
-                        <div className="stat-label-v123">Today's Appointments</div>
-                    </div>
-                    <div className="stat-card-v123">
-                        <div className="stat-value-v123">{stats.completedToday}</div>
-                        <div className="stat-label-v123">Completed</div>
-                    </div>
-                    <div className="stat-card-v123">
-                        <div className="stat-value-v123">{stats.pendingToday}</div>
-                        <div className="stat-label-v123">Pending</div>
-                    </div>
-                    <div className="stat-card-v123">
-                        <div className="stat-value-v123">{stats.totalMonthly}</div>
-                        <div className="stat-label-v123">Total This Month</div>
-                    </div>
-                </div>
-
-                <div className="appointments-container-v123">
-                    <div className="appointments-card-v123">
-                        <div className="appointments-card-header-v123">
-                            <h6>Today's Appointments</h6>
-                            <div className="appointment-count-v123">{todayAppointments.length}</div>
+                <div className="appointments-container-v2025">
+                    <div className="appointments-card-v2025">
+                        <div className="appointments-card-header-v2025">
+                            <h2>Last Month's Appointment Status</h2>
                         </div>
-                        <div className="table-container-v123">
-                            {todayAppointments.length > 0 ? (
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Time</th>
-                                            <th>Patient</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {todayAppointments.map(appointment => (
-                                            <tr key={appointment.appointment_id}>
-                                                <td>
-                                                    <span className="time-slot-v123">
-                                                        {getTimeFromSlot(appointment.slot)}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span className="patient-name-v123">
-                                                        {appointment.patient?.[0]?.patient_name || 'N/A'}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span className={getStatusClass(appointment.status)}>
-                                                        {appointment.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                        <div className="chart-container-v2025">
+                            {lastMonthAppointments.length > 0 ? (
+                                <AppointmentStatusPieChart className="chart" appointments={lastMonthAppointments} />
                             ) : (
-                                renderEmptyState('No appointments today')
+                                renderEmptyState('No appointments last month')
                             )}
                         </div>
                     </div>
 
-                    <div className="appointments-card-v123">
-                        <div className="appointments-card-header-v123">
-                            <h6>This Month's Appointments</h6>
-                            <div className="appointment-count-v123">{monthlyAppointments.length}</div>
+                    <div className="appointments-card-v2025">
+                        <div className="appointments-card-header-v2025">
+                            <h2>Week's Appointments by Day</h2>
                         </div>
-                        <div className="table-container-v123">
-                            {monthlyAppointments.length > 0 ? (
-                                <table>
+                        <div className="chart-container-v2025">
+                            <h2>Appointment Statistics</h2>
+                            {weekAppointments.length > 0 ? (
+                                <AppointmentsChart className="chart" appointments={weekAppointments.map(apt => ({
+                                    ...apt,
+                                    appointment_date: apt.medical_day
+                                }))} />
+                            ) : (
+                                renderEmptyState('No appointments this week')
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="appointments-container-v20255">
+                    <div className="appointments-card-v2025">
+                        <div className="appointments-card-header-v2025">
+                            <h2>Appointments (Today to Next 7 Days)</h2>
+                        </div>
+                                               <div className="table-container-v2025">
+                            {weekAppointments.length > 0 ? (
+                               <table>
                                     <thead>
                                         <tr>
+                                            <th>ID</th>
                                             <th>Date</th>
                                             <th>Time</th>
                                             <th>Patient</th>
@@ -361,17 +324,22 @@ const DoctorDetailPage = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {monthlyAppointments.map(appointment => (
-                                            <tr key={appointment.appointment_id}>
+                                        {weekAppointments.map(appointment => (
+                                            <tr 
+                                                key={appointment.appointment_id} 
+                                                onClick={() => handleAppointmentClick(appointment.appointment_id)}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <td>{appointment.appointment_id}</td>
                                                 <td>{formatDate(appointment.medical_day)}</td>
                                                 <td>
-                                                    <span className="time-slot-v123">
+                                                    <span className="time-slot-v2025">
                                                         {getTimeFromSlot(appointment.slot)}
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <span className="patient-name-v123">
-                                                        {appointment.patient?.[0]?.patient_name || 'N/A'}
+                                                    <span className="patient-name-v2025">
+                                                        {appointment.patient?.[0]?.patient_name || ''}
                                                     </span>
                                                 </td>
                                                 <td>
@@ -384,14 +352,14 @@ const DoctorDetailPage = () => {
                                     </tbody>
                                 </table>
                             ) : (
-                                renderEmptyState('No appointments this month')
+                                renderEmptyState('No appointments in the next 7 days')
                             )}
                         </div>
                     </div>
                 </div>
 
                 {isFeedbackModalOpen && (
-                    <div className="feedback-modal-v123">
+                    <div className="feedback-modal-v2025">
                         <FeedbackListWithReply onClose={handleCloseFeedbackModal} />
                     </div>
                 )}

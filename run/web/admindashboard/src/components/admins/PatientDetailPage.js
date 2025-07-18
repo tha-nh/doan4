@@ -93,14 +93,69 @@ const PatientDetailPageB1 = () => {
             <div className="patient-contentB1">
                 <div className="headerB1">
                     <h2>Patient Details</h2>
-                    <button className="back-buttonB1" onClick={handleBack}>Back to Patients</button>
+                    <button className="back-buttonB1" onClick={handleBack}>Patients List</button>
                 </div>
                 {patient ? (
-                    <div className="patient-infoB1">
-                        <p><strong>Name:</strong> {patient.patient_name}</p>
-                        <p><strong>Email:</strong> {patient.patient_email}</p>
-                        <p><strong>Phone:</strong> {patient.patient_phone}</p>
-                        <p><strong>Address:</strong> {patient.patient_address}</p>
+                   <div className="doctor-info-v2025">
+                        <div className="doctor-info-header-v2025">
+                            <img src={patient.patient_img}
+                                 className="doctor-avatar-v2025"
+                                 alt="doctor"
+                            />
+                            <div className="doctor-name-section-v2025">
+                                <h5>{patient.patient_name}</h5>
+                            </div>
+                        </div>
+                        <div className="doctor-details-grid-v2025">
+                            <div className="detail-item-v2025">
+                                <div className="detail-icon-v2025">
+                                    <svg fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                                    </svg>
+                                </div>
+                                <div className="detail-content-v2025">
+                                    <div className="detail-label-v2025">Email</div>
+                                    <div className="detail-value-v2025">{patient.patient_email}</div>
+                                </div>
+                            </div>
+                            <div className="detail-item-v2025">
+                                <div className="detail-icon-v2025">
+                                    <svg fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                                    </svg>
+                                </div>
+                                <div className="detail-content-v2025">
+                                    <div className="detail-label-v2025">birthday</div>
+                                    <div className="detail-value-v2025">{patient.patient_dob}</div>
+                                </div>
+                            </div>
+                            <div className="detail-item-v2025">
+                                <div className="detail-icon-v2025">
+                                    <svg fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                                    </svg>
+                                </div>
+                                <div className="detail-content-v2025">
+                                    <div className="detail-label-v2025">Address</div>
+                                    <div className="detail-value-v2025">{patient.patient_address}</div>
+                                </div>
+                            </div>
+                            <div className="detail-item-v2025">
+                                <div className="detail-icon-v2025">
+                                    <svg fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <div className="detail-content-v2025">
+                                    <div className="detail-label-v2025">Phone</div>
+                                    <div className="detail-value-v2025">
+                                        <span className="working-status-v2025">
+                                            {patient.patient_phone}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 ) : (
                     <p>Loading patient details...</p>
@@ -129,7 +184,7 @@ const PatientDetailPageB1 = () => {
                                                 <td>{appointment.appointment_id}</td>
                                                 <td>{new Date(appointment.medical_day).toLocaleDateString()}</td>
                                                 <td>{getTimeFromSlot(appointment.slot)}</td>
-                                                <td>{appointment.doctor?.[0]?.doctor_name || 'N/A'}</td>
+                                                <td>{appointment.doctor?.[0]?.doctor_name || ''}</td>
                                                 <td>{appointment.status}</td>
                                             </tr>
                                         ))

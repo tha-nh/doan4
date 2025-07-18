@@ -57,7 +57,7 @@ const AppointmentsPage = () => {
       7: "03:00 PM - 04:00 PM",
       8: "04:00 PM - 05:00 PM",
     };
-    return slotMapping[slot] || "N/A";
+    return slotMapping[slot] || "";
   };
 
   const handleSearch = () => {
@@ -111,6 +111,8 @@ const AppointmentsPage = () => {
             <div className="input-container">
               <select value={status} onChange={(e) => setStatus(e.target.value)}>
                 <option value="">All Statuses</option>
+                <option value="CANCELLED">CANCELLED</option>
+                <option value="MISSED">MISSED</option>
                 <option value="PENDING">PENDING</option>
                 <option value="COMPLETED">COMPLETED</option>
               </select>
@@ -140,17 +142,17 @@ const AppointmentsPage = () => {
                     onClick={() => handleAppointmentClick(appointment.appointment_id)}
                     style={{ cursor: "pointer" }}
                   >
-                    <td>{appointment.appointment_id || "N/A"}</td>
-                    <td>{appointment.patient?.[0]?.patient_name || "N/A"}</td>
-                    <td>{appointment.doctor?.[0]?.doctor_name || "N/A"}</td>
+                    <td>{appointment.appointment_id || ""}</td>
+                    <td>{appointment.patient?.[0]?.patient_name || ""}</td>
+                    <td>{appointment.doctor?.[0]?.doctor_name || ""}</td>
                     <td>
                       {appointment.medical_day
                         ? new Date(appointment.medical_day).toLocaleDateString()
-                        : "N/A"}
+                        : ""}
                     </td>
                     <td>{convertSlotToTime(appointment.slot)}</td>
-                    <td>{appointment.status || "N/A"}</td>
-                    <td>{appointment.price || "N/A"}</td>
+                    <td>{appointment.status || ""}</td>
+                    <td>{appointment.price || ""}</td>
                   </tr>
                 ))
               ) : (

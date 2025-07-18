@@ -130,7 +130,7 @@ const DoctorsPageA1 = () => {
                     // 👇 Khi chọn 1 department, render bảng
                     <div style={{ display: 'flow-root' }}>
                         <button onClick={handleBackClick} className="back-buttonA1" style={{ float: 'right' }}>
-                            Back to Departments
+                            Departments List
                         </button>
                         <div className="table-containerA1">
                             <table>
@@ -167,7 +167,7 @@ const DoctorsPageA1 = () => {
                     // 👇 Khi đang ở chế độ tìm kiếm, hiện danh sách kết quả dạng bảng
                     <div style={{ display: 'flow-root' }}>
                         <button onClick={handleBackClick} className="back-buttonA1" style={{ float: 'right' }}>
-                            Back to Departments
+                            Departments List
                         </button>
                         <div className="table-containerA1">
                             <table>

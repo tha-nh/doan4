@@ -26,11 +26,10 @@
     background-color: #005bb5;
 }
 
-
-/* Giữ nguyên các phần trước */
-
 .admin-dashboard {
     display: flex;
+    height: 100vh;
+    width: 100vw;
 }
 
 .sidebar-header {
@@ -58,9 +57,8 @@
 }
 
 .main-content {
-    flex: 1;
-    background-color: #f8f9fa;
-    /* padding: 20px; */
+    flex-grow: 1;
+    overflow: auto;
 }
 
 .topbar {
@@ -75,27 +73,28 @@
 
 .topbar .search input {
     padding: 10px;
-    border: 1px solid rgba(0,0,0,0.3);
+    border: 1px solid rgba(0, 0, 0, 0.3);
     border-radius: 4px;
     font-size: 15px;
     outline: none;
 }
 
 .topbar .search button {
-    padding: 10px;
+    padding: 12px 24px;
     border: none;
     border-radius: 4px;
-    font-size: 15px;
-    outline: none;
-    color: white;
-    background-color: #004B91;
-    cursor: pointer;
+    font-size: 16px;
+
+    /*outline: none;*/
+    background-color: #1e3a8a;
+    color: #ffffff;
+    /*cursor: pointer;*/
+
 }
 
 .topbar .search button:hover {
-    background-color: white;
-    color: #004B91;
-    box-shadow: 0 0 3px #004B91;
+    background-color: #294eae;
+    color:  #ffffff;
 }
 
 .topbar .profile {
@@ -114,7 +113,7 @@
 .stats {
     display: flex;
     justify-content: space-around;
-    margin:2rem 0;
+    margin: 2rem 0;
 }
 
 .card {
@@ -136,19 +135,22 @@
 .card p {
     font-size: 16px;
     margin: 0;
+    font-family: revert;
 }
 
 .charts {
     display: flex;
     justify-content: space-around;
+    gap: 20px;
+    flex-wrap: wrap;
 }
 
 .chart {
-    /*background-color: #ffc107;*/
     padding: 20px;
     border-radius: 4px;
     width: 45%;
     text-align: center;
+    min-width: 300px;
 }
 
 .table {
@@ -157,58 +159,33 @@
     margin-top: 20px;
 }
 
-.table th, .table td {
+.table th,
+.table td {
     border: 1px solid #ddd;
     padding: 8px;
 }
 
 .table th {
-    /* background-color: #f2f2f2; */
-     background-color: #004b91;
+    background-color: #004b91;
     text-align: left;
 }
 
-.feedback-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: white;
-    padding: 20px;
-    border: 2px solid #000;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
-    overflow-y: auto;
-    width: 80%;
-    max-height: 80%;
-}
 
 .error {
     color: red;
     font-weight: bold;
 }
 
-
-
-
-
-
-/*====*/
-body, html {
-    height: 100%; /* Ensure full height */
-    width: 100%; /* Ensure full width */
+body,
+html {
+    height: 100%;
+    width: 100%;
     margin: 0;
     padding: 0;
-    overflow: hidden; /* Prevent scrolling on the page */
-}
-
-.admin-dashboard {
-    display: flex;
-    height: 100vh; /* Full viewport height */
-    width: 100vw; /* Full viewport width */
 }
 
 .sidebar {
-    width: 250px; /* Sidebar width */
+    width: 250px;
     background-color: #004B91;
     color: white;
     height: 100%;
@@ -216,34 +193,28 @@ body, html {
     flex-direction: column;
 }
 
-.main-content {
-    flex-grow: 1; /* Take remaining width */
-    overflow: auto; /* Allow scrolling within the main content area if needed */
-    /* padding: 20px; */
-}
-
-
-
 .profile button {
-  background-color: #004B91;
-  color: #ffffff;
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-start; /* Căn trái nội dung bên trong nút */
-  align-items: center;
-  border: none;
-  outline: none;
-  cursor: pointer;
-  padding: 10px;
-  gap: 5px;
-  border-radius: 4px;
+    background-color: #004B91;
+    color: #ffffff;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    border
+
+: none;
+    outline: none;
+    cursor: pointer;
+    padding: 10px;
+    gap: 5px;
+    border-radius: 4px;
 }
 
-.profile button:hover{
+.profile button:hover {
     background-color: #0056a6;
 }
 
-.chart h2{
+.chart h2 {
     font-size: 24px;
     font-weight: bold;
     color: #004B91;
@@ -258,44 +229,52 @@ body, html {
     padding: 10px;
     border-radius: 4px;
 }
-.chart button:hover{
+
+.chart button:hover {
     background-color: #0056a6;
 }
 
-.content h1{
+.content h1 {
     font-size: 30px;
     font-weight: bold;
     color: #0056a6;
 }
 
-h2{
+.main-content h2 {
     color: #004B91;
     font-weight: bold;
     font-size: 24px;
+    text-align: center;
 }
-
-
 @media (max-width: 1000px) {
-    .stats{
+    .stats {
         flex-wrap: wrap;
         gap: 20px;
     }
+    .charts {
+        flex-direction: column;
+        align-items: center;
+    }
+    .chart {
+        width: 100%;
+        max-width: 500px;
+    }
 }
 
-.search select{
-    border: 1px solid rgba(0,0,0,0.3);
+.search select {
+    border: 1px solid rgba(0, 0, 0, 0.3);
     outline: none;
     padding: 10px;
     border-radius: 4px;
     font-size: 15px;
 }
 
-.input-container{
+.input-container {
     position: relative;
     width: fit-content;
 }
 
-.input-container label{
+.input-container label {
     position: absolute;
     top: -8px;
     left: 10px;
@@ -306,11 +285,44 @@ h2{
     padding: 0 5px;
 }
 
-.search{
+.search {
     display: flex;
     flex-direction: row;
     justify-content: left;
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
+}
+
+.recent-sections {
+    margin-top: 50px;
+}
+
+.recent-table img {
+    border-radius: 35px;
+    vertical-align: middle;
+}
+
+.recent-sections-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 46px;
+
+}
+
+.recent-sections-row .recent-section {
+    flex: 1;
+    min-width: 300px;
+    max-width: 48%;
+}
+
+@media (max-width: 800px) {
+    .recent-sections-row {
+        flex-direction: column;
+    }
+    .recent-sections-row .recent-section {
+        max-width: 100%;
+    }
 }

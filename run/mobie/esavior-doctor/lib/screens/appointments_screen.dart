@@ -528,9 +528,14 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
     final Map<String, dynamic> appointmentData = Map<String, dynamic>.from(appointment);
 
     final patientList = appointmentData['patient'] as List<dynamic>?;
+    final patient = patientList != null && patientList.isNotEmpty
+        ? patientList[0] as Map<String, dynamic>
+        : null;
+
     final patientName = patientList != null && patientList.isNotEmpty
         ? (patientList[0] as Map<String, dynamic>)['patient_name']?.toString() ?? 'Patient ID: ${appointmentData['patient_id']}'
-        : 'Patient ID: ${appointmentData['patient_id'] ?? 'Unknown'}';
+        : 'Patient ID: ${appointmentData['patient_id'] ?? ''}';
+    final patientImg = patient?['patient_img']?.toString();
 
     final timeSlot = _appointmentService.getTimeSlot(appointmentData['slot']);
     final appointmentDate = _formatDateVerbose(appointmentData['medical_day']?.toString());
@@ -607,13 +612,17 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          children: [
+
+                    children: [
+                            // 👇 Ảnh bệnh nhân hoặc icon fallback
                             Container(
-                              padding: const EdgeInsets.all(12),
+                              width: 48,
+                              height: 48,
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [primaryColor, primaryDarkColor],
-                                ),
+                                gradient: patientImg == null
+                                    ? LinearGradient(colors: [primaryColor, primaryDarkColor])
+                                    : null,
+                                color: patientImg != null ? Colors.grey[200] : null,
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
@@ -623,10 +632,19 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                                   ),
                                 ],
                               ),
-                              child: const Icon(
-                                Icons.person,
-                                color: Colors.white,
-                                size: 24,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: patientImg != null
+                                    ? Image.network(
+                                  patientImg,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Center(
+                                    child: Icon(Icons.person, color: Colors.white),
+                                  ),
+                                )
+                                    : const Center(
+                                  child: Icon(Icons.person, color: Colors.white),
+                                ),
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -643,7 +661,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
-
                                 ],
                               ),
                             ),
@@ -668,6 +685,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                             ),
                           ],
                         ),
+
                         const SizedBox(height: 16),
                         Container(
                           padding: const EdgeInsets.all(12),

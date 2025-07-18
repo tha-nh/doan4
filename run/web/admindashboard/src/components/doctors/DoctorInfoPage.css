@@ -201,18 +201,18 @@
 }
 
 .doctorinfo-btn-primary {
-    background-color: #007bff;
+    background-color: #1976d2;
     color: #fff;
 }
 
 .doctorinfo-btn-secondary {
-    background-color: red;
-    color: #fff;
+    background-color: #e0e0e0 ;
+    color: #000;
 }
 
 .doctorinfo-btn-warning {
-    background-color: #ffc107;
-    color: #000;
+    background-color: #8623bf;
+    color: #fff;
 }
 
 .btn:hover {

@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'PatientMedicalListScreen.dart';
 import 'medical_record_detail_screen.dart';
 
 class MedicalRecordsScreen extends StatefulWidget {
@@ -587,184 +589,73 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen>
     final patientName = patientKey.split('-').length > 1
         ? patientKey.split('-').sublist(1).join('-')
         : '';
+    final patientId = int.tryParse(patientKey.split('-')[0]) ?? 0;
 
-    final recordCount = patientRecords.length;
-    final latestRecord = patientRecords.first;
+    // 👇 Lấy ảnh bệnh nhân từ record đầu tiên
+    final patientImg = patientRecords.isNotEmpty &&
+        patientRecords[0]['patients'] != null &&
+        patientRecords[0]['patients'].isNotEmpty
+        ? patientRecords[0]['patients'][0]['patient_img']
+        : null;
 
     return AnimatedContainer(
       duration: Duration(milliseconds: 300 + (groupIndex * 100)),
       curve: Curves.easeOutCubic,
       margin: const EdgeInsets.only(bottom: 10),
       child: Card(
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.all(16),
-          childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-          leading: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.person,
-              color: primaryColor,
-              size: 24,
-            ),
-          ),
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                patientName,
-                style: GoogleFonts.lora(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: textColor,
-                ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 2,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          leading: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: patientImg != null
+                ? Image.network(
+              patientImg,
+              width: 48,
+              height: 48,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: 48,
+                height: 48,
+                color: primaryColor.withOpacity(0.1),
+                child: Icon(Icons.person, color: primaryColor),
               ),
-
-            ],
-          ),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '$recordCount records',
-                    style: GoogleFonts.lora(
-                      fontSize: 12,
-                      color: primaryColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                if (latestRecord['follow_up_date'] != null)
-                  Text(
-                    'Latest: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(latestRecord['follow_up_date']))}',
-                    style: GoogleFonts.lora(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-              ],
+            )
+                : Container(
+              width: 48,
+              height: 48,
+              color: primaryColor.withOpacity(0.1),
+              child: Icon(Icons.person, color: primaryColor),
             ),
           ),
-          children: patientRecords.map<Widget>((record) {
-            return _buildRecordInGroup(record);
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  // New method to build individual record within a patient group
-  Widget _buildRecordInGroup(dynamic record) {
-    final severity = record['severity']?.toString() ?? '';
-    final severityColor = _getSeverityColor(severity);
-
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          title: Text(
+            patientName,
+            style: GoogleFonts.lora(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+            ),
+          ),
+          subtitle: Text(
+            'View medical record(s)',
+            style: GoogleFonts.lora(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
+          ),
+          trailing: Icon(Icons.arrow_forward_ios, color: primaryColor, size: 16),
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => MedicalRecordDetailScreen(record: record),
+                builder: (_) => PatientMedicalListScreen(
+                  patientId: patientId,
+                  patientName: patientName,
+                ),
               ),
             );
           },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[200]!),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        record['follow_up_date'] != null
-                            ? DateFormat('dd/MM/yyyy').format(DateTime.parse(record['follow_up_date']))
-                            : '',
-                        style: GoogleFonts.lora(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: textColor,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: severityColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            severity.isNotEmpty ? severity : '',
-                            style: GoogleFonts.lora(
-                              fontSize: 10,
-                              color: severityColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                _buildRecordDetail(
-                  icon: Icons.sick,
-                  label: 'Symptoms',
-                  value: record['symptoms'] ?? '',
-                ),
-                const SizedBox(height: 8),
-                _buildRecordDetail(
-                  icon: Icons.medical_services,
-                  label: 'Diagnosis',
-                  value: record['diagnosis'] ?? '',
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      'View details',
-                      style: GoogleFonts.lora(
-                        fontSize: 12,
-                        color: primaryColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      color: primaryColor,
-                      size: 12,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

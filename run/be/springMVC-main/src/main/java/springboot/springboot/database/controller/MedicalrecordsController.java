@@ -67,9 +67,90 @@ public class MedicalrecordsController<T extends Entity<?>> {
 
 
     @GetMapping("/list")
-    public List<T> list() throws SQLException, IllegalAccessException, NoSuchMethodException, InstantiationException, InvocationTargetException {
-        return model.getAll(new Medicalrecords().getClass());
+    public List<Medicalrecords> list() {
+        try {
+            List<Medicalrecords> recordsList = new ArrayList<>();
+            List<Medicalrecords> records = model.getAll(Medicalrecords.class);
+
+            for (Medicalrecords record : records) {
+                Medicalrecords newRecord = new Medicalrecords();
+                BeanUtils.copyProperties(record, newRecord);
+
+                // Gán thông tin bệnh nhân
+                if (record.getPatient_id() != null) {
+                    Patients patientFilter = new Patients();
+                    patientFilter.setPatient_id(record.getPatient_id());
+                    newRecord.setPatients(Collections.singletonList((Patients) model.getEntityById(patientFilter)));
+                }
+
+                // Gán thông tin bác sĩ
+                if (record.getDoctor_id() != null) {
+                    Doctors doctorFilter = new Doctors();
+                    doctorFilter.setDoctor_id(record.getDoctor_id());
+                    newRecord.setDoctors(Collections.singletonList((Doctors) model.getEntityById(doctorFilter)));
+                }
+
+                recordsList.add(newRecord);
+            }
+
+            return recordsList;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
     }
+
+    @GetMapping("/patient/{patientId}")
+    public List<Medicalrecords> getByPatientId(@PathVariable Integer patientId) {
+        try {
+            List<Medicalrecords> result = new ArrayList<>();
+
+            // Lấy toàn bộ records
+            List<Medicalrecords> allRecords = model.getAll(Medicalrecords.class);
+
+            for (Medicalrecords record : allRecords) {
+                if (record.getPatient_id() != null && record.getPatient_id().equals(patientId)) {
+                    Medicalrecords newRecord = new Medicalrecords();
+                    BeanUtils.copyProperties(record, newRecord);
+
+                    // Gán thông tin bệnh nhân
+                    Patients patient = new Patients();
+                    patient.setPatient_id(patientId);
+                    Object patientResult = model.getEntityById(patient);
+                    if (patientResult instanceof List) {
+                        List<Patients> list = (List<Patients>) patientResult;
+                        if (!list.isEmpty()) {
+                            newRecord.setPatients(Collections.singletonList(list.get(0)));
+                        }
+                    }
+
+                    // Gán thông tin bác sĩ nếu có
+                    if (record.getDoctor_id() != null) {
+                        Doctors doctor = new Doctors();
+                        doctor.setDoctor_id(record.getDoctor_id());
+                        Object doctorResult = model.getEntityById(doctor);
+                        if (doctorResult instanceof List) {
+                            List<Doctors> list = (List<Doctors>) doctorResult;
+                            if (!list.isEmpty()) {
+                                newRecord.setDoctors(Collections.singletonList(list.get(0)));
+                            }
+                        }
+                    }
+
+                    result.add(newRecord);
+                }
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+
 
     @GetMapping("/search")
     public List<Medicalrecords> getByField(@RequestParam Map<String, String> requestParams) {

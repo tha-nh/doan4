@@ -21,7 +21,7 @@ const HomePage = () => {
                 <div className="role-buttons">
                     <button className="click-login" onClick={() => navigate('/adminlogin')}>I am Administrator</button>
                     <button className="click-login" onClick={() => navigate('/doctorlogin')}>I am a Doctor</button>
-                    <button className="click-login" onClick={() => navigate('/stafflogin')}>I am an Employee</button>
+
                 </div>
             </div>
         </div>

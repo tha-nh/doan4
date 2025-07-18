@@ -15,7 +15,7 @@ const AppointmentsChart = ({ appointments }) => {
 
         // Nhóm dữ liệu cuộc hẹn theo ngày
         const groupedData = appointments.reduce((acc, appointment) => {
-            const date = new Date(appointment.appointment_date).toLocaleDateString();
+            const date = new Date(appointment.medical_day).toLocaleDateString();
             acc[date] = (acc[date] || 0) + 1;
             return acc;
         }, {});

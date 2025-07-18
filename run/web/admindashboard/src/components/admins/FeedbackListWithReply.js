@@ -34,27 +34,56 @@ const FeedbackListWithReply = ({ onClose }) => {
   const [replyContent, setReplyContent] = useState("");
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-
-  // Snackbar
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("success");
-
-  // Lịch sử phản hồi
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyData, setHistoryData] = useState([]);
 
   useEffect(() => {
+    // Tính ngày hiện tại và 7 ngày trước
+    const today = new Date(); // 16/07/2025
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(today.getDate() - 7); // 09/07/2025
+
+    // Định dạng ngày thành YYYY-MM-DD để gửi lên API
+    const startDate = sevenDaysAgo.toISOString().split("T")[0]; // VD: 2025-07-09
+    const endDate = today.toISOString().split("T")[0]; // VD: 2025-07-16
+
+    console.log("Fetching feedbacks from", startDate, "to", endDate); // Debug
+
+    // Gửi yêu cầu API với tham số startDate và endDate
     axios
-      .get("http://localhost:8081/api/v1/feedback/list")
+      .get("http://localhost:8081/api/v1/feedback/list", {
+        params: {
+          startDate: startDate,
+          endDate: endDate, // Thêm endDate để giới hạn đến ngày hiện tại
+        },
+      })
       .then((response) => {
-        // Giả định feedback chưa có `replied`, ta thêm vào
-        const list = response.data.map((fb) => ({ ...fb, replied: false }));
-        setFeedbacks(list);
+        console.log("API response:", response.data); // Debug dữ liệu trả về
+        if (response.data && Array.isArray(response.data)) {
+          // Lọc thêm phía client để đảm bảo
+          const filteredList = response.data
+            .filter((fb) => {
+              const createdAt = new Date(fb.created_at);
+              return createdAt >= sevenDaysAgo && createdAt <= today;
+            })
+            .map((fb) => ({
+              ...fb,
+              replied: fb.replied || false,
+            }));
+          setFeedbacks(filteredList);
+          if (filteredList.length === 0) {
+            setError("No feedback found from 09/07/2025 to 16/07/2025.");
+          }
+        } else {
+          setError("Invalid data format from server.");
+        }
       })
       .catch((err) => {
-        console.error("Error fetching feedbacks", err);
-        setError("Error fetching feedbacks");
+        console.error("Error fetching feedbacks:", err);
+        setError("Failed to fetch feedbacks. Please check the server.");
       });
   }, []);
 
@@ -88,9 +117,10 @@ const FeedbackListWithReply = ({ onClose }) => {
 
         setSelectedFeedback(null);
         setReplyContent("");
+        setError("");
       })
       .catch((err) => {
-        console.error("Error sending reply", err);
+        console.error("Error sending reply:", err);
         setSnackbarMessage("Error sending reply");
         setSnackbarSeverity("error");
         setSnackbarOpen(true);
@@ -98,11 +128,10 @@ const FeedbackListWithReply = ({ onClose }) => {
   };
 
   const openHistory = (fb) => {
-    // Giả lập dữ liệu (thực tế gọi API từ server: `/feedback/history/:id`)
     setHistoryData([
       {
-        message: fb.replyContent || "Đây là nội dung phản hồi mẫu",
-        timestamp: "2025-06-13 12:30",
+        message: fb.replyContent || "No reply content available",
+        timestamp: fb.replyTimestamp || "Unknown timestamp",
       },
     ]);
     setHistoryOpen(true);
@@ -135,7 +164,6 @@ const FeedbackListWithReply = ({ onClose }) => {
               p: 1,
             }}
           >
-            {/* Left Panel */}
             <Paper
               elevation={0}
               sx={{
@@ -147,7 +175,7 @@ const FeedbackListWithReply = ({ onClose }) => {
               }}
             >
               <Typography variant="h6" gutterBottom>
-                📬 All Feedbacks
+                📬 Feedback (09/07/2025 - 16/07/2025)
               </Typography>
               <TextField
                 label="Search name or email"
@@ -159,7 +187,12 @@ const FeedbackListWithReply = ({ onClose }) => {
                 sx={{ mb: 2 }}
               />
               <List>
-                {filteredFeedbacks.length === 0 ? (
+                {error && (
+                  <Typography sx={{ mt: 2, color: "error.main" }}>
+                    {error}
+                  </Typography>
+                )}
+                {filteredFeedbacks.length === 0 && !error ? (
                   <Typography sx={{ mt: 2, color: "gray" }}>
                     ❌ No matching feedbacks.
                   </Typography>
@@ -183,7 +216,9 @@ const FeedbackListWithReply = ({ onClose }) => {
                       </ListItemAvatar>
                       <ListItemText
                         primary={fb.name}
-                        secondary={`📧 ${fb.email}`}
+                        secondary={`📧 ${fb.email} | ${new Date(
+                          fb.created_at
+                        ).toLocaleDateString("vi-VN")}`}
                       />
                       {fb.replied && (
                         <Chip
@@ -206,7 +241,6 @@ const FeedbackListWithReply = ({ onClose }) => {
               </List>
             </Paper>
 
-            {/* Right Panel */}
             <Box
               sx={{ flex: 1, p: 4, position: "relative", overflowY: "auto" }}
             >
@@ -227,7 +261,12 @@ const FeedbackListWithReply = ({ onClose }) => {
                     ✉️ Feedback from {selectedFeedback.name}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Email: <strong>{selectedFeedback.email}</strong>
+                    Email: <strong>{selectedFeedback.email}</strong> | Date:{" "}
+                    <strong>
+                      {new Date(selectedFeedback.created_at).toLocaleString(
+                        "vi-VN"
+                      )}
+                    </strong>
                   </Typography>
                   <Divider sx={{ my: 2 }} />
 
@@ -294,7 +333,6 @@ const FeedbackListWithReply = ({ onClose }) => {
         </Fade>
       </Modal>
 
-      {/* Snackbar */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={3000}
@@ -310,7 +348,6 @@ const FeedbackListWithReply = ({ onClose }) => {
         </Alert>
       </Snackbar>
 
-      {/* Lịch sử phản hồi */}
       <Dialog
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
